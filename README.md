@@ -34,6 +34,10 @@ $ pip install ./dist/uio_exoplanet_group-0.1.0-py3-none-any.whl
 
 ### tap
 
+Fetching data from various astronomy databases via [TAP](https://www.ivoa.net/documents/TAP/) interface.
+
+Example:
+
 ``` py
 from uio.databases import tap
 
@@ -42,7 +46,7 @@ if not tapService:
     raise SystemError("Unknown service")
 
 tbl = tap.queryService(
-    tapService,
+    tapService, # or directly "http://voparis-tap-planeto.obspm.fr/tap"
     " ".join((
         "SELECT star_name, granule_uid, mass, radius, period, semi_major_axis",
         "FROM exoplanet.epn_core",
