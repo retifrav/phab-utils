@@ -35,4 +35,3 @@ def queryService(
     tapService = pyvo.dal.TAPService(tapEndpoint)
     resultingTable = tapService.search(adqlQuery).to_table()
     return resultingTable.to_pandas()
-
