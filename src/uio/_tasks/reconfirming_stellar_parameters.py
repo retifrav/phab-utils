@@ -6,7 +6,7 @@ import pandas
 import numpy
 # import json
 
-from typing import List
+from typing import Optional, List, Dict
 
 
 # Looking for given parameters in GAIA database
@@ -27,7 +27,7 @@ def lookForParametersInGaia(
 
     print("\nGetting GAIA IDs from SIMBAD...\n")
 
-    stars = {}
+    stars: Dict[str, Optional[str]] = {}
     for star in starNames:
         stars[star] = None
         oid = simbad.getOtherIDfromSimbad(star, "gaia", "dr3")
