@@ -8,6 +8,7 @@ UIO exoplanet group tools for data processing. Created for [Centre for Earth Evo
     - [From sources](#from-sources)
 - [Modules](#modules)
     - [tap](#tap)
+    - [\_tasks](#_tasks)
 
 <!-- /MarkdownTOC -->
 
@@ -56,3 +57,7 @@ tbl = tap.queryService(
 )
 print(tbl)
 ```
+
+### \_tasks
+
+Code in this module is precisely specific to particular tasks and isn't meant for common use. The purpose and description of each task are provided in comments before every such function.
