@@ -1,4 +1,9 @@
-# __all__ = ["tapServices", "getServiceEndpoint", "queryService"]
+# what is available for importing from __init__.py
+# __all__ = [
+#     "tapServices",
+#     "getServiceEndpoint",
+#     "queryService"
+# ]
 
 import pyvo
 import pandas
@@ -30,8 +35,11 @@ def getServiceEndpoint(tapServiceName: str) -> Optional[str]:
 def queryService(
     tapEndpoint: str,
     adqlQuery: str
-) -> pandas.DataFrame:
-    # print(tapEndpoint, adqlQuery)
+) -> Optional[pandas.DataFrame]:
+    #
     tapService = pyvo.dal.TAPService(tapEndpoint)
-    resultingTable = tapService.search(adqlQuery).to_table()
-    return resultingTable.to_pandas()
+    results = tapService.search(adqlQuery)
+    if len(results):
+        return results.to_table().to_pandas()
+    else:
+        return None
