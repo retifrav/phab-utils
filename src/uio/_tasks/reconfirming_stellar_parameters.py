@@ -28,9 +28,7 @@ def lookForParametersInGaia(
     print("\nGetting GAIA IDs from SIMBAD...\n")
 
     stars = {}
-    x = 1
     for star in starNames:
-        x += 1
         stars[star] = None
         oid = simbad.getOtherIDfromSimbad(star, "gaia", "dr3")
         if oid is None:
@@ -38,8 +36,6 @@ def lookForParametersInGaia(
         else:
             print(f"- found GAIA ID for [{star}]: {oid}")
             stars[star] = oid
-        if x > 3:
-            break
 
     # print(json.dumps(stars, indent=4))
 
@@ -54,6 +50,7 @@ def lookForParametersInGaia(
     foundCnt = 0
     for star in stars:
         gaiaID = stars[star]
+        print(f"- {star} | {gaiaID}...")
         tbl = tap.queryService(
             tapService,
             " ".join((
