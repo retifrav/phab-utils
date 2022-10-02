@@ -7,7 +7,13 @@ UIO exoplanet group tools for data processing. Created for [Centre for Earth Evo
 - [Installing](#installing)
     - [From sources](#from-sources)
 - [Modules](#modules)
-    - [tap](#tap)
+    - [databases.simbad](#databasessimbad)
+        - [getOtherIDfromSimbad](#getotheridfromsimbad)
+    - [databases.tap](#databasestap)
+        - [getServiceEndpoint](#getserviceendpoint)
+        - [queryService](#queryservice)
+    - [files.pickle](#filespickle)
+        - [openPickleAsPandasTable](#openpickleaspandastable)
     - [\_tasks](#_tasks)
 
 <!-- /MarkdownTOC -->
@@ -33,21 +39,39 @@ $ pip install ./dist/uio_exoplanet_group-0.1.0-py3-none-any.whl
 
 ## Modules
 
-### tap
+### databases.simbad
+
+#### getOtherIDfromSimbad
+
+``` py
+from uio.databases import simbad
+
+otherID = simbad.getOtherIDfromSimbad(star, "gaia", "dr3")
+print(otherID)
+```
+
+### databases.tap
 
 Fetching data from various astronomy databases via [TAP](https://www.ivoa.net/documents/TAP/) interface.
 
-Example:
+#### getServiceEndpoint
 
 ``` py
 from uio.databases import tap
 
 tapService = tap.getServiceEndpoint("PADC")
-if not tapService:
-    raise SystemError("Unknown service")
+if tapService is None:
+    raise SystemError("No endpoint for such TAP service in the list")
+print(tapService)
+```
+
+#### queryService
+
+``` py
+from uio.databases import tap
 
 tbl = tap.queryService(
-    tapService, # or directly "http://voparis-tap-planeto.obspm.fr/tap"
+    "http://voparis-tap-planeto.obspm.fr/tap",
     " ".join((
         "SELECT star_name, granule_uid, mass, radius, period, semi_major_axis",
         "FROM exoplanet.epn_core",
@@ -56,6 +80,17 @@ tbl = tap.queryService(
     ))
 )
 print(tbl)
+```
+
+### files.pickle
+
+#### openPickleAsPandasTable
+
+``` py
+from uio.files import pickle
+
+pnd = pickle.openPickleAsPandasTable("/path/to/some.pkl")
+print(pnd.head(15))
 ```
 
 ### \_tasks
