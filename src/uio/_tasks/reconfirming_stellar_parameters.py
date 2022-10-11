@@ -19,7 +19,8 @@ from typing import Optional, List, Dict
 #
 def lookForParametersInGaia(
     pickleWithOriginalTable: str,
-    parameters: List[str]
+    adqlTable: str,
+    adqlParameters: List[str]
 ) -> pandas.DataFrame:
     #
     originalTable = pickle.openPickleAsPandasTable(pickleWithOriginalTable)
@@ -41,7 +42,7 @@ def lookForParametersInGaia(
 
     print("\nLooking for parameters in GAIA...\n")
 
-    for parameter in parameters:
+    for parameter in adqlParameters:
         originalTable[parameter] = numpy.array(numpy.NaN, dtype=float)
 
     tapService = tap.getServiceEndpoint("GAIA")
@@ -54,8 +55,8 @@ def lookForParametersInGaia(
         tbl = tap.queryService(
             tapService,
             " ".join((
-                f"SELECT {', '.join(parameters)}",
-                "FROM gaiadr3.astrophysical_parameters_supp",
+                f"SELECT {', '.join(adqlParameters)}",
+                f"FROM {adqlTable}",
                 f"WHERE source_id = {gaiaID}"
             ))
         )
@@ -71,7 +72,7 @@ def lookForParametersInGaia(
                     ))
                 )
             # add found values to the new columns in the original table
-            for parameter in parameters:
+            for parameter in adqlParameters:
                 originalTable.loc[
                     originalTable["star_name"] == star,
                     parameter
