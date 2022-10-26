@@ -30,7 +30,6 @@ def lookForParametersInGaia(
 
     stars: Dict[str, Optional[str]] = {}
     for star in starNames:
-        stars[star] = None
         oid = simbad.getOtherIDfromSimbad(star, "gaia", "dr3")
         if oid is None:
             print(f"- [WARNING] did not GAIA ID for [{star}]")
