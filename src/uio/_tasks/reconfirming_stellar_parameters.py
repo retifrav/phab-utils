@@ -24,7 +24,7 @@ def lookForParametersInGaia(
 ) -> pandas.DataFrame:
     #
     originalTable = pickle.openPickleAsPandasTable(pickleWithOriginalTable)
-    starNames = originalTable.query("`ima_flag`.isnull()")["star_name"].unique()
+    starNames = originalTable["star_name"].unique()
 
     print("\nGetting GAIA IDs from SIMBAD...\n")
 
