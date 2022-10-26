@@ -12,20 +12,28 @@ def getOtherIDfromSimbad(
 ) -> Optional[str]:
     otherID = None
     otherIDs = Simbad.query_objectids(starName)
-    for oid in otherIDs:
-        if otherIDname in oid["ID"].lower():
-            idToLookFor = (
-                f"{otherIDname} {otherIDversion}"
-                if otherIDversion else otherIDname
-            )
-            if idToLookFor in oid["ID"].lower():
-                if withoutIDprefix:
-                    prefixRE = re.compile(
-                        rf"{idToLookFor}\s?",
-                        re.IGNORECASE
-                    )
-                    otherID = prefixRE.sub("", oid["ID"])
-                else:
-                    otherID = oid["ID"]
-                break
+    if otherIDs is None:
+        print(
+            " ".join((
+                "- [WARNING] Simbad database doesn't have information",
+                f"about [{star}]"
+            ))
+        )
+    else:
+        for oid in otherIDs:
+            if otherIDname in oid["ID"].lower():
+                idToLookFor = (
+                    f"{otherIDname} {otherIDversion}"
+                    if otherIDversion else otherIDname
+                )
+                if idToLookFor in oid["ID"].lower():
+                    if withoutIDprefix:
+                        prefixRE = re.compile(
+                            rf"{idToLookFor}\s?",
+                            re.IGNORECASE
+                        )
+                        otherID = prefixRE.sub("", oid["ID"])
+                    else:
+                        otherID = oid["ID"]
+                    break
     return otherID
