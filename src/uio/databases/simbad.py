@@ -16,7 +16,7 @@ def getOtherIDfromSimbad(
         print(
             " ".join((
                 "- [WARNING] Simbad database doesn't have information",
-                f"about [{star}]"
+                f"about [{starName}]"
             ))
         )
     else:
