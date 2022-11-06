@@ -7,7 +7,7 @@ from typing import Optional
 def getOtherIDfromSimbad(
     starName: str,
     otherIDname: str,
-    otherIDversion: Optional[str],
+    otherIDversion: Optional[str] = None,
     withoutIDprefix: bool = True
 ) -> Optional[str]:
     otherID = None
@@ -20,13 +20,15 @@ def getOtherIDfromSimbad(
             ))
         )
     else:
+        # print(f"Simbad IDs for {starName}:")
         for oid in otherIDs:
-            if otherIDname in oid["ID"].lower():
+            # print(f"- {oid['ID']}")
+            if otherIDname.lower() in oid["ID"].lower():
                 idToLookFor = (
                     f"{otherIDname} {otherIDversion}"
                     if otherIDversion else otherIDname
                 )
-                if idToLookFor in oid["ID"].lower():
+                if idToLookFor.lower() in oid["ID"].lower():
                     if withoutIDprefix:
                         prefixRE = re.compile(
                             rf"{idToLookFor}\s?",

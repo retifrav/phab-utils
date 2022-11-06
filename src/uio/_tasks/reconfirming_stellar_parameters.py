@@ -20,7 +20,8 @@ from typing import Optional, List, Dict
 def lookForParametersInGaia(
     pickleWithOriginalTable: str,
     adqlTable: str,
-    adqlParameters: List[str]
+    adqlParameters: List[str],
+    simbadIDversion: Optional[str] = None
 ) -> pandas.DataFrame:
     #
     originalTable = pickle.openPickleAsPandasTable(pickleWithOriginalTable)
@@ -30,7 +31,7 @@ def lookForParametersInGaia(
 
     stars: Dict[str, Optional[str]] = {}
     for star in starNames:
-        oid = simbad.getOtherIDfromSimbad(star, "gaia", "dr3")
+        oid = simbad.getOtherIDfromSimbad(star, "gaia", simbadIDversion)
         if oid is None:
             print(f"- [WARNING] did not GAIA ID for [{star}]")
         else:
