@@ -1,6 +1,7 @@
 __pycache__
 dist
 build
+documentation/_deploy
 
 *.egg-info
 *.sublime-workspace

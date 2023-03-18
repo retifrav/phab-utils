@@ -9,20 +9,20 @@ import numpy
 from typing import Optional, List, Dict
 
 
-# Looking for given parameters in GAIA database
-#
-# 1. Opens a pickle file with original Pandas table;
-# 2. Extracts unique list of star names;
-# 3. Gets their GAIA IDs from Simbad database;
-# 4. Queries GAIA database for given parameters;
-# 5. Adds found parameters to the original table as new columns.
-#
 def lookForParametersInGaia(
     pickleWithOriginalTable: str,
     adqlTable: str,
     adqlParameters: List[str],
     simbadIDversion: Optional[str] = None
 ) -> pandas.DataFrame:
+    """
+    Looking for given parameters in GAIA database
+    1. Opens a pickle file with original Pandas table;
+    2. Extracts unique list of star names;
+    3. Gets their GAIA IDs from Simbad database;
+    4. Queries GAIA database for given parameters;
+    5. Adds found parameters to the original table as new columns.
+    """
     #
     originalTable = pickle.openPickleAsPandasTable(pickleWithOriginalTable)
     starNames = originalTable["star_name"].unique()

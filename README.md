@@ -6,6 +6,7 @@ UIO exoplanet group tools for data processing. Created for [Centre for Earth Evo
 
 - [Installing](#installing)
     - [From sources](#from-sources)
+    - [From PyPI](#from-pypi)
 - [Modules](#modules)
     - [databases.simbad](#databasessimbad)
         - [getOtherIDfromSimbad](#getotheridfromsimbad)
@@ -14,7 +15,8 @@ UIO exoplanet group tools for data processing. Created for [Centre for Earth Evo
         - [queryService](#queryservice)
     - [files.pickle](#filespickle)
         - [openPickleAsPandasTable](#openpickleaspandastable)
-    - [\_tasks](#_tasks)
+    - [tasks](#tasks)
+- [Deploying documentation](#deploying-documentation)
 
 <!-- /MarkdownTOC -->
 
@@ -36,6 +38,10 @@ $ cd /path/to/repository/
 $ python -m build
 $ pip install ./dist/uio_exoplanet_group-0.1.0-py3-none-any.whl
 ```
+
+### From PyPI
+
+Later the package will also be published at PyPI, so it could be installed with pip.
 
 ## Modules
 
@@ -93,6 +99,23 @@ pnd = pickle.openPickleAsPandasTable("/path/to/some.pkl")
 print(pnd.head(15))
 ```
 
-### \_tasks
+### tasks
 
-Code in this module is precisely specific to particular tasks and isn't meant for common use. The purpose and description of each task are provided in comments before every such function.
+Code in this module is precisely specific to particular tasks and isn't meant for common use. The purpose and description of each task are provided in in-source as comments for every such function.
+
+## Deploying documentation
+
+The documentation is generated with [pdoc](https://pdoc.dev):
+
+``` sh
+$ pip install pdoc
+
+$ cd /path/to/uio-exoplanet-group
+$ rm -r ./documentation/_deploy/*
+$ pdoc ./src/uio \
+    --template-directory ./documentation/_templates/ \
+    --edit-url="uio=https://github.com/retifrav/uio-exoplanet-group/blob/master/src/uio/" \
+    --output-directory ./documentation/_deploy/
+```
+
+For now it's a blunt deployment of generated HTML, but later it probably will be better to rely on GitHub Actions (*if it won't spend too much of free quota*) by customizing [this workflow](https://github.com/mitmproxy/pdoc/blob/main/.github/workflows/docs.yml).
