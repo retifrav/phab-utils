@@ -1,3 +1,8 @@
+"""
+Reconfirming stellar parameters, enriching original datasets
+with additional data from various data sources.
+"""
+
 from ..files import pickle
 from ..databases import tap
 from ..databases import simbad
@@ -16,14 +21,51 @@ def lookForParametersInGaia(
     simbadIDversion: Optional[str] = None
 ) -> pandas.DataFrame:
     """
-    Looking for given parameters in GAIA database
+    Looking for specified parameters in GAIA database:
+
     1. Opens a pickle file with original Pandas table;
     2. Extracts unique list of star names;
     3. Gets their GAIA IDs from Simbad database;
     4. Queries GAIA database for given parameters;
     5. Adds found parameters to the original table as new columns.
+
+    Example:
+
+    ``` py
+    from uio.tasks import reconfirming_stellar_parameters
+
+    tbl = reconfirming_stellar_parameters.lookForParametersInGaia(
+        "./data/systems-528n.pkl",
+        "gaiadr3.astrophysical_parameters",
+        [
+            "age_flame",
+            "logg_gspphot",
+            "mass_flame",
+            "mh_gspphot",
+            "mh_gspspec",
+            "radius_flame",
+            "radius_gspphot",
+            "teff_esphs",
+            "teff_espucd",
+            "teff_gspphot",
+            "teff_gspspec",
+            "teff_msc1",
+            "ew_espels_halpha",
+            "ew_espels_halpha_model"
+        ],
+        "dr3"
+    )
+    ```
+
+    You might need to provide `simbadIDversion` parameter (*the `dr3` value
+    here*) if SIMBAD (`uio.databases.simbad.getOtherIDfromSimbad`) returns
+    IDs like `DR3 2135237601028549888` and you need to get exactly
+    the DR3 ones.
+
+    As a result, your original table `tbl` will be enriched with additional
+    columns according to the list of provided astrophysical parameters.
     """
-    #
+
     originalTable = pickle.openPickleAsPandasTable(pickleWithOriginalTable)
     starNames = originalTable["star_name"].unique()
 

@@ -1,3 +1,8 @@
+"""
+Getting data from [SIMBAD](https://simbad.u-strasbg.fr/simbad/)
+astronomical database.
+"""
+
 from astroquery.simbad import Simbad
 import re
 
@@ -10,6 +15,16 @@ def getOtherIDfromSimbad(
     otherIDversion: Optional[str] = None,
     withoutIDprefix: bool = True
 ) -> Optional[str]:
+    """
+    Example:
+
+    ``` py
+    from uio.databases import simbad
+
+    otherID = simbad.getOtherIDfromSimbad(star, "gaia", "dr3")
+    #print(otherID)
+    ```
+    """
     otherID = None
     otherIDs = Simbad.query_objectids(starName)
     if otherIDs is None:

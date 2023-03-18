@@ -8,15 +8,9 @@ UIO exoplanet group tools for data processing. Created for [Centre for Earth Evo
     - [From sources](#from-sources)
     - [From PyPI](#from-pypi)
 - [Modules](#modules)
-    - [databases.simbad](#databasessimbad)
-        - [getOtherIDfromSimbad](#getotheridfromsimbad)
-    - [databases.tap](#databasestap)
-        - [getServiceEndpoint](#getserviceendpoint)
-        - [queryService](#queryservice)
-    - [files.pickle](#filespickle)
-        - [openPickleAsPandasTable](#openpickleaspandastable)
-    - [tasks](#tasks)
-- [Deploying documentation](#deploying-documentation)
+- [Data](#data)
+- [Documentation](#documentation)
+    - [Deployment](#deployment)
 
 <!-- /MarkdownTOC -->
 
@@ -29,7 +23,7 @@ $ cd /path/to/repository/
 $ pip install ./
 ```
 
-If you'd like to immediately apply source code changes, add `-e` argument,
+Add an `-e` argument, if you intend to modify the original sources.
 
 You can also build a wheel and install/distribute that instead:
 
@@ -45,67 +39,23 @@ Later the package will also be published at PyPI, so it could be installed with 
 
 ## Modules
 
-### databases.simbad
+- utility
+    + `uio.databases` - fetching/querying data from various data sources;
+    + `uio.files` - working with files;
+- tasks
+    + `uio.tasks` - special module for performing specific tasks.
 
-#### getOtherIDfromSimbad
+## Data
 
-``` py
-from uio.databases import simbad
+Wherever you see a reference to some data files in documentation, examples, comments or anywhere else, for example some function taking a path like `./data/systems-528n.pkl`, check the [data](https://github.com/retifrav/uio-exoplanet-group/tree/master/data) folder - chances are, that file will be provided there.
 
-otherID = simbad.getOtherIDfromSimbad(star, "gaia", "dr3")
-print(otherID)
-```
+## Documentation
 
-### databases.tap
+The package documentation is published [here](https://uio.decovar.dev/uio.html).
 
-Fetching data from various astronomy databases via [TAP](https://www.ivoa.net/documents/TAP/) interface.
+### Deployment
 
-#### getServiceEndpoint
-
-``` py
-from uio.databases import tap
-
-tapService = tap.getServiceEndpoint("PADC")
-if tapService is None:
-    raise SystemError("No endpoint for such TAP service in the list")
-print(tapService)
-```
-
-#### queryService
-
-``` py
-from uio.databases import tap
-
-tbl = tap.queryService(
-    "http://voparis-tap-planeto.obspm.fr/tap",
-    " ".join((
-        "SELECT star_name, granule_uid, mass, radius, period, semi_major_axis",
-        "FROM exoplanet.epn_core",
-        "WHERE star_name = 'Kepler-107'",
-        "ORDER BY granule_uid"
-    ))
-)
-print(tbl)
-```
-
-### files.pickle
-
-#### openPickleAsPandasTable
-
-``` py
-from uio.files import pickle
-
-pnd = pickle.openPickleAsPandasTable("/path/to/some.pkl")
-print(pnd.head(15))
-```
-
-### tasks
-
-Code in this module is precisely specific to particular tasks and isn't meant for common use. The purpose and description of each task are provided in in-source as comments for every such function.
-
-## Deploying documentation
-
-The documentation is generated with [pdoc](https://pdoc.dev):
+Documentation is generated with [pdoc](https://pdoc.dev):
 
 ``` sh
 $ pip install pdoc
