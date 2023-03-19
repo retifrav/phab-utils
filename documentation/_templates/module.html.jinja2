@@ -2,10 +2,19 @@
 
 {% set rootprefix = "../" * module.modulename.count(".") if module else "" %}
 
+{% block title %}{{ module.modulename }} API{% endblock %}
+
 {% block nav_title %}
     <a href="https://uio.decovar.dev">
         <img src="{{ rootprefix }}./ceed.jpg" class="logo" alt="UIO exoplanet group logo">
     </a>
+{% endblock %}
+
+{% block nav_members %}
+    {% if module.members %}
+        <h2>API</h2>
+        {{ nav_members(module.members.values()) }}
+    {% endif %}
 {% endblock %}
 
 {% block nav_footer %}
