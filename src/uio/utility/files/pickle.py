@@ -11,7 +11,7 @@ def openPickleAsPandasTable(f: str) -> pandas.DataFrame:
     Example:
 
     ``` py
-    from uio.files import pickle
+    from uio.utility.files import pickle
 
     pnd = pickle.openPickleAsPandasTable("/path/to/some.pkl")
     #print(pnd.head(15))

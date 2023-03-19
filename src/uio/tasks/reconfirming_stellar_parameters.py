@@ -3,9 +3,9 @@ Reconfirming stellar parameters, enriching original datasets
 with additional data from various data sources.
 """
 
-from ..files import pickle
-from ..databases import tap
-from ..databases import simbad
+from ..utility.files import pickle
+from ..utility.databases import tap
+from ..utility.databases import simbad
 
 import pandas
 import numpy
@@ -58,7 +58,7 @@ def lookForParametersInGaia(
     ```
 
     You might need to provide `simbadIDversion` parameter (*the `dr3` value
-    here*) if SIMBAD (`uio.databases.simbad.getOtherIDfromSimbad`) returns
+    here*) if SIMBAD (`uio.utility.databases.simbad.getOtherIDfromSimbad`) returns
     IDs like `DR3 2135237601028549888` and you need to get exactly
     the DR3 ones.
 

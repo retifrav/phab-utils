@@ -1,3 +1,35 @@
+{% extends "default/index.html.jinja2" %}
+
+{% set rootprefix = "../" * module.modulename.count(".") if module else "" %}
+
+{% block title %}UIO exoplanet group{% endblock %}
+
+{% block nav %}
+    <a href="https://uio.decovar.dev/">
+        <img src="{{ rootprefix }}./ceed.jpg" class="logo" alt="UIO exoplanet group logo">
+    </a>
+
+    <input type="search" placeholder="Search..." role="searchbox" aria-label="search"
+        pattern=".+" required>
+
+    <h2 style="margin-top:15px;">Modules</h2>
+    <ul>
+        <li><a href="./uio/utility.html">uio.utility</a></li>
+        <li><a href="./uio/tasks.html">uio.tasks</a></li>
+    </ul>
+
+    <footer>
+        <span>Package version: <a href='https://github.com/retifrav/uio-exoplanet-group/tree/{{ env["UIO_PACKAGE_VERSION"] | default("unknown") }}'>{{ env["UIO_PACKAGE_VERSION"] | default("unknown") }}</a></span><br>
+        <span>Generated with <a href="https://pdoc.dev/">pdoc</a></span>
+    </footer>
+{% endblock %}
+
+{% block content %}
+    <main class="pdoc">
+
+    {% filter to_html %}
+# UIO exoplanet group
+
 UIO exoplanet group tools for data processing. Created for [Centre for Earth Evolution and Dynamics](https://www.mn.uio.no/ceed/) and [its successor](https://mn.uio.no/ceed/english/about/news-and-events/research-in-media/new-ceo-centre-phab.html) **Centre for Planetary Habitability**.
 
 <!-- MarkdownTOC -->
@@ -7,7 +39,6 @@ UIO exoplanet group tools for data processing. Created for [Centre for Earth Evo
 - [Installing](#installing)
     - [From sources](#from-sources)
     - [From PyPI](#from-pypi)
-- [Modules](#modules)
 
 <!-- /MarkdownTOC -->
 
@@ -34,7 +65,7 @@ Add an `-e` argument, if you intend to modify the original sources.
 You can also build a wheel and install/distribute that instead:
 
 ``` sh
-$ cd /path/to/repository/
+$ cd /path/to/uio-exoplanet-group/
 $ python -m build
 $ pip install ./dist/uio_exoplanet_group-0.1.0-py3-none-any.whl
 ```
@@ -42,11 +73,8 @@ $ pip install ./dist/uio_exoplanet_group-0.1.0-py3-none-any.whl
 ### From PyPI
 
 Later the package will also be published at PyPI, so it could be installed with pip.
+    {% endfilter %}
 
-## Modules
-
-- utility
-    + `uio.databases` - fetching/querying data from various data sources;
-    + `uio.files` - working with files;
-- tasks
-    + `uio.tasks` - special module for performing particular tasks.
+    </main>
+    {% include "search.html.jinja2" %}
+{% endblock %}

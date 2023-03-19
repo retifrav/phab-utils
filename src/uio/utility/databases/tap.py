@@ -37,7 +37,7 @@ def getServiceEndpoint(tapServiceName: str) -> Optional[str]:
     Example:
 
     ``` py
-    from uio.databases import tap
+    from uio.utility.databases import tap
 
     tapService = tap.getServiceEndpoint("PADC")
     if tapService is None:
@@ -60,7 +60,7 @@ def queryService(
     Example:
 
     ``` py
-    from uio.databases import tap
+    from uio.utility.databases import tap
 
     tbl = tap.queryService(
         "http://voparis-tap-planeto.obspm.fr/tap",

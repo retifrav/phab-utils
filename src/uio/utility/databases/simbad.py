@@ -19,7 +19,7 @@ def getOtherIDfromSimbad(
     Example:
 
     ``` py
-    from uio.databases import simbad
+    from uio.utility.databases import simbad
 
     otherID = simbad.getOtherIDfromSimbad(star, "gaia", "dr3")
     #print(otherID)

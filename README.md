@@ -19,7 +19,7 @@ UIO exoplanet group tools for data processing. Created for [Centre for Earth Evo
 ### From sources
 
 ``` sh
-$ cd /path/to/repository/
+$ cd /path/to/uio-exoplanet-group/
 $ pip install ./
 ```
 
@@ -28,7 +28,7 @@ Add an `-e` argument, if you intend to modify the original sources.
 You can also build a wheel and install/distribute that instead:
 
 ``` sh
-$ cd /path/to/repository/
+$ cd /path/to/uio-exoplanet-group/
 $ python -m build
 $ pip install ./dist/uio_exoplanet_group-0.1.0-py3-none-any.whl
 ```
@@ -39,11 +39,8 @@ Later the package will also be published at PyPI, so it could be installed with 
 
 ## Modules
 
-- utility
-    + `uio.databases` - fetching/querying data from various data sources;
-    + `uio.files` - working with files;
-- tasks
-    + `uio.tasks` - special module for performing specific tasks.
+- utility - reusable/common utility modules;
+- tasks - special module for performing particular tasks.
 
 ## Data
 
@@ -51,7 +48,7 @@ Wherever you see a reference to some data files in documentation, examples, comm
 
 ## Documentation
 
-The package documentation is published [here](https://uio.decovar.dev/uio.html).
+The package documentation is published [here](https://uio.decovar.dev/).
 
 ### Deployment
 
@@ -62,7 +59,8 @@ $ pip install pdoc
 
 $ cd /path/to/uio-exoplanet-group
 $ rm -r ./documentation/_deploy/*
-$ UIO_PACKAGE_VERSION=$(git rev-parse --short HEAD) pdoc ./src/uio \
+
+$ UIO_PACKAGE_VERSION=$(git rev-parse --short HEAD) pdoc ./src/uio/utility ./src/uio/tasks \
     --template-directory ./documentation/_templates/ \
     --edit-url="uio=https://github.com/retifrav/uio-exoplanet-group/blob/master/src/uio/" \
     --output-directory ./documentation/_deploy/
