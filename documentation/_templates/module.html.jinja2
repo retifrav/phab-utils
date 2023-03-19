@@ -1,3 +1,18 @@
 {% extends "default/module.html.jinja2" %}
 
+{% set rootprefix = "../" * module.modulename.count(".") if module else "" %}
+
+{% block nav_title %}
+    <a href="https://uio.decovar.dev">
+        <img src="{{ rootprefix }}./ceed.jpg" class="logo" alt="UIO exoplanet group logo">
+    </a>
+{% endblock %}
+
+{% block nav_footer %}
+    <footer>
+        <span>Package version: <a href='https://github.com/retifrav/uio-exoplanet-group/tree/{{ env["UIO_PACKAGE_VERSION"] | default("unknown") }}'>{{ env["UIO_PACKAGE_VERSION"] | default("unknown") }}</a></span><br>
+        <span>Generated with <a href="https://pdoc.dev/">pdoc</a></span>
+    </footer>
+{% endblock %}
+
 {% block attribution %}{% endblock %}

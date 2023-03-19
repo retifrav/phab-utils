@@ -1,0 +1,9 @@
+nav.pdoc footer {
+    font-family: "Courier New", monospace;
+    font-size: 0.75em;
+    color: dark-gray;
+}
+nav.pdoc footer a {
+    display: inline;
+    text-decoration: underline;
+}

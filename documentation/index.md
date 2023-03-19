@@ -49,4 +49,4 @@ Later the package will also be published at PyPI, so it could be installed with 
     + `uio.databases` - fetching/querying data from various data sources;
     + `uio.files` - working with files;
 - tasks
-    + `uio.tasks` - special module for performing specific tasks.
+    + `uio.tasks` - special module for performing particular tasks.
