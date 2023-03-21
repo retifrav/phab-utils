@@ -7,3 +7,15 @@ nav.pdoc footer a {
     display: inline;
     text-decoration: underline;
 }
+
+input[type=search] {
+    padding: 4px 8px;
+    font-size: 0.9em;
+}
+
+@media (max-width: 769px)
+{
+    nav input[type="search"] {
+        max-width: calc(100% - var(--pad));
+    }
+}
