@@ -94,7 +94,7 @@ def lookForParametersInGaia(
     for star in stars:
         gaiaID = stars[star]
         print(f"- {star} | {gaiaID}...")
-        tbl = tap.queryService(
+        resultsGAIA = tap.queryService(
             tapService,
             " ".join((
                 f"SELECT {', '.join(adqlParameters)}",
@@ -102,9 +102,10 @@ def lookForParametersInGaia(
                 f"WHERE source_id = {gaiaID}"
             ))
         )
-        if tbl is None:
+        if resultsGAIA is None:
             print(f"- [WARNING] did not found anything in GAIA for [{gaiaID}]")
         else:
+            tbl = resultsGAIA.to_table().to_pandas()
             foundCnt += 1
             if len(tbl) > 1:
                 print(

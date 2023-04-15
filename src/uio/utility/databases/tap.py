@@ -11,7 +11,6 @@ via [TAP](https://www.ivoa.net/documents/TAP/) interface.
 # ]
 
 import pyvo
-import pandas
 
 from typing import Optional
 
@@ -55,7 +54,7 @@ def getServiceEndpoint(tapServiceName: str) -> Optional[str]:
 def queryService(
     tapEndpoint: str,
     adqlQuery: str
-) -> Optional[pandas.DataFrame]:
+) -> Optional[pyvo.dal.tap.TAPResults]:
     """
     Example:
 
@@ -70,13 +69,13 @@ def queryService(
             "WHERE star_name = 'Kepler-107'",
             "ORDER BY granule_uid"
         ))
-    )
+    ).to_table().to_pandas()
     #print(tbl)
     ```
     """
     tapService = pyvo.dal.TAPService(tapEndpoint)
     results = tapService.search(adqlQuery)
     if len(results):
-        return results.to_table().to_pandas()
+        return results
     else:
         return None
