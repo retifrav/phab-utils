@@ -10,7 +10,8 @@ UIO exoplanet group tools for data processing. Created for [Centre for Earth Evo
 - [Modules](#modules)
 - [Data](#data)
 - [Documentation](#documentation)
-    - [Deployment](#deployment)
+    - [API](#api)
+    - [wiki](#wiki)
 
 <!-- /MarkdownTOC -->
 
@@ -48,11 +49,13 @@ Wherever you see a reference to some data files in documentation, examples, comm
 
 ## Documentation
 
-The package documentation is published [here](https://uio.decovar.dev/).
+There are two different pieces of documentation.
 
-### Deployment
+### API
 
-Documentation is generated with [pdoc](https://pdoc.dev):
+Located in `documentation`. This is the package API documentation, which is published [here](https://uio.decovar.dev/).
+
+It is generated with [pdoc](https://pdoc.dev):
 
 ``` sh
 $ pip install pdoc
@@ -68,3 +71,9 @@ $ cp ./documentation/ceed.jpg ./documentation/_deploy/
 ```
 
 For now it's a blunt deployment of generated HTML, but later it probably will be better to rely on GitHub Actions (*if it won't spend too much of free quota*) by customizing [this workflow](https://github.com/mitmproxy/pdoc/blob/main/.github/workflows/docs.yml).
+
+### wiki
+
+Located in `wiki`. This is general purpose / technical manuals, articles, notes, etc: how to install/build various tools, dependencies, how to set-up environments and so on.
+
+It is meant to be published somewhere else, but for now it will do being a part of repository. GitHub wikis could've been an option, but those are still quite bad in terms of organizing the content.
