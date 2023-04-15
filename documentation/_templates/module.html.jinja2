@@ -31,7 +31,7 @@
     {% block search_box %}
         {% if search and all_modules|length > 1 %}
             {# we set a pattern here so that we can use the :valid CSS selector #}
-            <input type="search" placeholder="Search..." role="searchbox" aria-label="search"
+            <input type="search" placeholder="Search" role="searchbox" aria-label="search"
                    pattern=".+" required>
         {% endif %}
     {% endblock %}
