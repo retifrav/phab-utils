@@ -12,22 +12,67 @@ via [TAP](https://www.ivoa.net/documents/TAP/) interface.
 
 import pyvo
 
-from typing import Optional
+from typing import Optional, Dict, List
 
 tapServices = {
     "NASA": {
         # case-sensitive TAP
         "endpoint": "https://exoplanetarchive.ipac.caltech.edu/TAP"
+    "NASA":
+    {
+        # case-sensitive URL
+        "endpoint": "https://exoplanetarchive.ipac.caltech.edu/TAP",
+        "parameters-that-are-strings":
+        [
+            "st_metratio",
+            "st_spectype"
+        ],
+        "parameters-that-have-errors":
+        [
+            "pl_orbsmax",
+            "pl_orbper",
+            "pl_massj",
+            "pl_radj"
+        ]
     },
-    "PADC": {
+    "PADC":
+    {
         "endpoint": "http://voparis-tap-planeto.obspm.fr/tap"
     },
-    "GAIA": {
+    "GAIA":
+    {
         "endpoint": "https://gea.esac.esa.int/tap-server/tap"
     }
 }
 """
 Dictionary of the most common TAP services.
+"""
+
+mapping_NASA_to_PADC_parameters_planet: Dict[str, str] = {
+    "pl_massj": "mass",
+    "pl_massjerr2": "mass_error_min",
+    "pl_massjerr1": "mass_error_max",
+    "pl_massjlim": "pl_massjlim",
+    "pl_radj": "radius",
+    "pl_radjerr2": "radius_error_min",
+    "pl_radjerr1": "radius_error_max",
+    "pl_radjlim": "pl_radjlim",
+    "rv_flag": "rv_flag",
+    "tran_flag": "tran_flag",
+    "ttv_flag": "ttv_flag",
+    "ima_flag": "ima_flag",
+    "pl_name": "granule_uid"
+}
+"""
+Dictionary for mapping planetary parameters names between NASA and PADC.
+"""
+
+mapping_NASA_to_PADC_parameters_star: Dict[str, str] = {
+    "st_spectype": "star_spec_type",
+    "hostname": "star_name"
+}
+"""
+Dictionary for mapping stellar parameters names between NASA and PADC.
 """
 
 
