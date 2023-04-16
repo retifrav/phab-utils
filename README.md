@@ -1,6 +1,6 @@
 # uio-exoplanet-group
 
-UIO exoplanet group tools for data processing. Created for [Centre for Earth Evolution and Dynamics](https://www.mn.uio.no/ceed/) and [its successor](https://mn.uio.no/ceed/english/about/news-and-events/research-in-media/new-ceo-centre-phab.html) **Centre for Planetary Habitability**.
+UIO exoplanet group tools for data processing. Created for [Centre for Earth Evolution and Dynamics](https://www.mn.uio.no/ceed/) and its successor [Centre for Planetary Habitability](https://mn.uio.no/ceed/english/about/news-and-events/research-in-media/new-ceo-centre-phab.html).
 
 <!-- MarkdownTOC -->
 
