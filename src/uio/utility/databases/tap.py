@@ -5,19 +5,16 @@ via [TAP](https://www.ivoa.net/documents/TAP/) interface.
 
 # what is available for importing from __init__.py
 # __all__ = [
-#     "tapServices",
-#     "getServiceEndpoint",
-#     "queryService"
+#     "services",
+#     "queryService",
+#     ...
 # ]
 
 import pyvo
 
 from typing import Optional, Dict, List
 
-tapServices = {
-    "NASA": {
-        # case-sensitive TAP
-        "endpoint": "https://exoplanetarchive.ipac.caltech.edu/TAP"
+services = {
     "NASA":
     {
         # case-sensitive URL
@@ -83,16 +80,24 @@ def getServiceEndpoint(tapServiceName: str) -> Optional[str]:
     ``` py
     from uio.utility.databases import tap
 
-    tapService = tap.getServiceEndpoint("PADC")
-    if tapService is None:
+    tapServiceEndpoint = tap.getServiceEndpoint("PADC")
+    if tapServiceEndpoint is None:
         raise SystemError("No endpoint for such TAP service in the list")
-    #print(tapService)
+    print(tapServiceEndpoint)
     ```
     """
-    tapService = tapServices.get(tapServiceName)
+    tapService = services.get(tapServiceName)
     if tapService:
-        return tapService["endpoint"]
+        tapServiceEndpoint = tapService.get("endpoint")
+        if tapServiceEndpoint:
+            return tapServiceEndpoint
+        else:
+            f"[ERROR] {tapServiceName} has no registered endpoint"
+            return None
     else:
+        print(
+            f"[ERROR] There is no TAP service under the name {tapServiceName}"
+        )
         return None
 
 
