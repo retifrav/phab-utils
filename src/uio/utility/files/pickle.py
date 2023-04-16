@@ -5,8 +5,10 @@ File operations with [pickles](https://docs.python.org/3/library/pickle.html).
 import pathlib
 import pandas
 
+from typing import Union
 
-def openPickleAsPandasTable(f: str) -> pandas.DataFrame:
+
+def openPickleAsPandasTable(f: Union[str, pathlib.Path]) -> pandas.DataFrame:
     """
     Example:
 
@@ -17,7 +19,11 @@ def openPickleAsPandasTable(f: str) -> pandas.DataFrame:
     #print(pnd.head(15))
     ```
     """
-    filePath = pathlib.Path(f)
+    filePath: pathlib.Path = pathlib.Path()
+    if isinstance(f, str):
+        filePath = pathlib.Path(f)
+    else:
+        filePath = f
     if not filePath.exists():
         raise SystemError(f"The path [{filePath}] does not exist")
     if not filePath.is_file():
