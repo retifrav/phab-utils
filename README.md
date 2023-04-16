@@ -12,6 +12,7 @@ UIO exoplanet group tools for data processing. Created for [Centre for Earth Evo
 - [Documentation](#documentation)
     - [API](#api)
     - [wiki](#wiki)
+- [Tests](#tests)
 
 <!-- /MarkdownTOC -->
 
@@ -77,3 +78,12 @@ For now it's a blunt deployment of generated HTML, but later it probably will be
 Located in `wiki`. This is general purpose / technical manuals, articles, notes, etc: how to install/build various tools, dependencies, how to set-up environments and so on.
 
 It is meant to be published somewhere else, but for now it will do being a part of repository. GitHub wikis could've been an option, but those are still quite bad in terms of organizing the content.
+
+## Tests
+
+To run tests:
+
+``` sh
+$ pip install pytest
+$ python -m pytest ./src/uio/tests/*[^_*].py
+```
