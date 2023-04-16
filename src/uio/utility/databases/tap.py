@@ -14,7 +14,7 @@ import pyvo
 
 from typing import Optional, Dict, List
 
-services = {
+services: Dict[str, Dict] = {
     "NASA":
     {
         # case-sensitive URL
@@ -45,31 +45,34 @@ services = {
 Dictionary of the most common TAP services.
 """
 
-mapping_NASA_to_PADC_parameters_planet: Dict[str, str] = {
-    "pl_massj": "mass",
-    "pl_massjerr2": "mass_error_min",
-    "pl_massjerr1": "mass_error_max",
-    "pl_massjlim": "pl_massjlim",
-    "pl_radj": "radius",
-    "pl_radjerr2": "radius_error_min",
-    "pl_radjerr1": "radius_error_max",
-    "pl_radjlim": "pl_radjlim",
-    "rv_flag": "rv_flag",
-    "tran_flag": "tran_flag",
-    "ttv_flag": "ttv_flag",
-    "ima_flag": "ima_flag",
-    "pl_name": "granule_uid"
+mappings: Dict[str, Dict] = {
+    "NASA-to-PADC":
+    {
+        "planets":
+        {
+            "pl_massj": "mass",
+            "pl_massjerr2": "mass_error_min",
+            "pl_massjerr1": "mass_error_max",
+            "pl_massjlim": "pl_massjlim",
+            "pl_radj": "radius",
+            "pl_radjerr2": "radius_error_min",
+            "pl_radjerr1": "radius_error_max",
+            "pl_radjlim": "pl_radjlim",
+            "rv_flag": "rv_flag",
+            "tran_flag": "tran_flag",
+            "ttv_flag": "ttv_flag",
+            "ima_flag": "ima_flag",
+            "pl_name": "granule_uid"
+        },
+        "stars":
+        {
+            "st_spectype": "star_spec_type",
+            "hostname": "star_name"
+        }
+    }
 }
 """
-Dictionary for mapping planetary parameters names between NASA and PADC.
-"""
-
-mapping_NASA_to_PADC_parameters_star: Dict[str, str] = {
-    "st_spectype": "star_spec_type",
-    "hostname": "star_name"
-}
-"""
-Dictionary for mapping stellar parameters names between NASA and PADC.
+Mapping tables columns between different databases.
 """
 
 
