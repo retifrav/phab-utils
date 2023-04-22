@@ -26,10 +26,12 @@ services: Dict[str, Dict] = {
         ],
         "parameters-that-have-errors":
         [
-            "pl_orbsmax",
-            "pl_orbper",
+            "period",
             "pl_massj",
-            "pl_radj"
+            "pl_orbper",
+            "pl_orbsmax",
+            "pl_radj",
+            "semi_major_axis"
         ]
     },
     "PADC":
@@ -50,24 +52,47 @@ mappings: Dict[str, Dict] = {
     {
         "planets":
         {
+            "ima_flag": "ima_flag",
             "pl_massj": "mass",
-            "pl_massjerr2": "mass_error_min",
             "pl_massjerr1": "mass_error_max",
+            "pl_massjerr2": "mass_error_min",
             "pl_massjlim": "pl_massjlim",
+            "pl_name": "granule_uid",
+            "pl_orbeccen": "eccentricity",
+            "pl_orbincl": "inclination",
+            "pl_orbper": "period",
+            "pl_orbpererr1": "period_error_max",
+            "pl_orbpererr2": "period_error_min",
+            "pl_orbperlim": "pl_orbperlim",
+            "pl_orbsmax": "semi_major_axis",
+            "pl_orbsmaxerr1": "semi_major_axis_error_max",
+            "pl_orbsmaxerr2": "semi_major_axis_error_min",
+            "pl_orbsmaxlim": "pl_orbsmaxlim",
             "pl_radj": "radius",
-            "pl_radjerr2": "radius_error_min",
             "pl_radjerr1": "radius_error_max",
+            "pl_radjerr2": "radius_error_min",
             "pl_radjlim": "pl_radjlim",
             "rv_flag": "rv_flag",
             "tran_flag": "tran_flag",
-            "ttv_flag": "ttv_flag",
-            "ima_flag": "ima_flag",
-            "pl_name": "granule_uid"
+            "ttv_flag": "ttv_flag"
         },
         "stars":
         {
+            "cb_flag": "cb_flag",
+            "hostname": "star_name",
+            "ra": "ra",
+            "st_age": "star_age",
+            "st_lum": "st_lum",
+            "st_mass": "star_mass",
+            "st_met": "star_metallicity",
+            "st_metratio": "st_metratio",
+            "st_rad": "star_radius",
+            "st_rotp": "st_rotp",
             "st_spectype": "star_spec_type",
-            "hostname": "star_name"
+            "st_teff": "star_teff",
+            "sy_dist": "sy_dist",
+            "sy_pnum": "sy_pnum",
+            "sy_snum": "sy_snum"
         }
     }
 }
