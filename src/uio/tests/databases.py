@@ -36,3 +36,21 @@ def test_unknown_tap_service(tapServiceThatDoesntExist: str) -> None:
             "There shouldn't be a registered TAP service",
             f"under the name \"{tapServiceThatDoesntExist}\""
         ))
+
+
+def test_getting_stellar_parameter_from_nasa() -> None:
+    starName = "Kepler-11"
+    hostname = tap.getStellarParameterFromNASA(starName, "hostname")
+    assert hostname == starName
+
+
+def test_getting_planetary_parameter_from_nasa() -> None:
+    planetName = "Kepler-11 b"
+    plname = tap.getPlanetaryParameterFromNASA(planetName, "pl_name")
+    assert plname == planetName
+
+
+def test_getting_parameter_from_padc() -> None:
+    planetName = "Kepler-11 b"
+    granuleUID = tap.getParameterFromPADC(planetName, "granule_uid")
+    assert granuleUID == planetName
