@@ -71,9 +71,16 @@ Dictionary of regular expressions for extracting sectors.
 """
 
 
-def getLightCurveStats(starName: str) -> Optional[Dict[str, Dict]]:
+def getLightCurveStats(
+    starName: str,
+    detailed: bool = True
+) -> Optional[Dict[str, Dict]]:
     """
     Gather statistics about available cadence values for a given star.
+
+    If `detailed` is set to `False`, then function will skip collecting
+    cadence values count by sectors, so resulting statistics will only
+    contain total count of values.
 
     Example:
 
@@ -115,20 +122,21 @@ def getLightCurveStats(starName: str) -> Optional[Dict[str, Dict]]:
                 # total count
                 stats[mission][cadence]["total"] = len(cadences)
 
-                # count by sectors
-                stats[mission][cadence]["by-sectors"] = {}
-                for m in cadences["mission"]:
-                    sectorMatch = re.search(missionSectorRegExes[mission], m)
-                    if not sectorMatch:
-                        raise ValueError(
-                            " ".join((
-                                "Couldn't extract sector from",
-                                f"this mission value: {m}"
-                            ))
-                        )
-                    sector = sectorMatch.group(1)
-                    try:
-                        stats[mission][cadence]["by-sectors"][sector] += 1
-                    except KeyError:
-                        stats[mission][cadence]["by-sectors"][sector] = 1
+                if detailed:
+                    # count by sectors
+                    stats[mission][cadence]["by-sectors"] = {}
+                    for m in cadences["mission"]:
+                        sectorMatch = re.search(missionSectorRegExes[mission], m)
+                        if not sectorMatch:
+                            raise ValueError(
+                                " ".join((
+                                    "Couldn't extract sector from",
+                                    f"this mission value: {m}"
+                                ))
+                            )
+                        sector = sectorMatch.group(1)
+                        try:
+                            stats[mission][cadence]["by-sectors"][sector] += 1
+                        except KeyError:
+                            stats[mission][cadence]["by-sectors"][sector] = 1
     return stats
