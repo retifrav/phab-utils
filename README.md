@@ -1,6 +1,6 @@
 # uio-exoplanet-group
 
-UIO exoplanet group tools for data processing. Created for [Centre for Earth Evolution and Dynamics](https://www.mn.uio.no/ceed/) and its successor [Centre for Planetary Habitability](https://mn.uio.no/ceed/english/about/news-and-events/research-in-media/new-ceo-centre-phab.html).
+UIO exoplanet group tools for data processing. Created for [Centre for Earth Evolution and Dynamics](https://www.mn.uio.no/ceed/) and its successor [Center for Planetary Habitability](https://planetaryhabitability.org/).
 
 <!-- MarkdownTOC -->
 
@@ -68,7 +68,7 @@ $ UIO_PACKAGE_VERSION=$(git rev-parse --short HEAD) pdoc ./src/uio/utility ./src
     --template-directory ./documentation/_templates/ \
     --edit-url="uio=https://github.com/retifrav/uio-exoplanet-group/blob/master/src/uio/" \
     --output-directory ./documentation/_deploy/
-$ cp ./documentation/{favicon.ico,ceed.jpg} ./documentation/_deploy/
+$ cp ./documentation/{favicon.ico,phab.jpg} ./documentation/_deploy/
 ```
 
 For now it's a blunt deployment of generated HTML, but later it probably will be better to rely on GitHub Actions (*if it won't spend too much of free quota*) by customizing [this workflow](https://github.com/mitmproxy/pdoc/blob/main/.github/workflows/docs.yml).
