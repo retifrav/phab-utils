@@ -1,6 +1,6 @@
 import pytest
 
-from uio.utility.databases import tap
+from uio.utility.databases import tap, lightcurves
 
 from typing import Tuple
 
@@ -11,8 +11,8 @@ def tapService() -> Tuple[str, str]:
 
 
 @pytest.fixture
-def tapServiceThatDoesntExist() -> str:
-    return "Some random value"
+def somethingThatDoesntExist() -> str:
+    return "Something that doesn't exist, ololo"
 
 
 def test_known_tap_service(tapService: Tuple[str, str]) -> None:
@@ -29,12 +29,12 @@ def test_known_tap_service(tapService: Tuple[str, str]) -> None:
         ))
 
 
-def test_unknown_tap_service(tapServiceThatDoesntExist: str) -> None:
-    tapServiceEndpoint = tap.getServiceEndpoint(tapServiceThatDoesntExist)
+def test_unknown_tap_service(somethingThatDoesntExist: str) -> None:
+    tapServiceEndpoint = tap.getServiceEndpoint(somethingThatDoesntExist)
     assert tapServiceEndpoint is None, \
         " ".join((
             "There shouldn't be a registered TAP service",
-            f"under the name \"{tapServiceThatDoesntExist}\""
+            f"under the name \"{somethingThatDoesntExist}\""
         ))
 
 
@@ -54,3 +54,8 @@ def test_getting_parameter_from_padc() -> None:
     planetName = "Kepler-11 b"
     granuleUID = tap.getParameterFromPADC(planetName, "granule_uid")
     assert granuleUID == planetName
+
+
+def test_get_light_curve_stats_fail(somethingThatDoesntExist: str) -> None:
+    stats = lightcurves.getLightCurveStats(somethingThatDoesntExist)
+    assert stats is None
