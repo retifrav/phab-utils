@@ -5,8 +5,9 @@ UiO exoplanet group tools for data processing. Created for [Centre for Earth Evo
 <!-- MarkdownTOC -->
 
 - [Installing](#installing)
-    - [From sources](#from-sources)
     - [From PyPI](#from-pypi)
+    - [From sources](#from-sources)
+        - [Building a wheel](#building-a-wheel)
 - [Modules](#modules)
 - [Data](#data)
 - [Documentation](#documentation)
@@ -18,31 +19,39 @@ UiO exoplanet group tools for data processing. Created for [Centre for Earth Evo
 
 ## Installing
 
+### From PyPI
+
+``` sh
+$ pip install uio-exoplanet-group
+```
+
 ### From sources
 
 ``` sh
 $ cd /path/to/uio-exoplanet-group/
-$ pip install ./
+$ pip install .
 ```
 
-Add an `-e` argument, if you intend to modify the original sources.
+Add an `-e` argument, if you'd like to automatically update your locally installed package by pulling from the repository or/and if you intend to modify the sources:
 
-You can also build a wheel and install/distribute that instead:
+``` sh
+$ pip install -e .
+```
+
+#### Building a wheel
+
+You can also build a wheel and distribute/install that instead:
 
 ``` sh
 $ cd /path/to/uio-exoplanet-group/
 $ python -m build
-$ pip install ./dist/uio_exoplanet_group-0.1.0-py3-none-any.whl
+$ pip install ./dist/uio_exoplanet_group-*.whl
 ```
-
-### From PyPI
-
-Later the package will also be published at PyPI, so it could be installed with pip.
 
 ## Modules
 
-- utility - reusable/common utility modules;
-- tasks - special module for performing particular tasks.
+- `utility` - reusable/common utility modules;
+- `tasks` - special module for performing particular tasks.
 
 ## Data
 
