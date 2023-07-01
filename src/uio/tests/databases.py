@@ -1,6 +1,7 @@
 import pytest
 
 from uio.utility.databases import tap, lightcurves
+from . import somethingThatDoesntExist
 
 from typing import Tuple
 
@@ -8,11 +9,6 @@ from typing import Tuple
 @pytest.fixture
 def tapService() -> Tuple[str, str]:
     return ("PADC", "http://voparis-tap-planeto.obspm.fr/tap")
-
-
-@pytest.fixture
-def somethingThatDoesntExist() -> str:
-    return "Something that doesn't exist, ololo"
 
 
 def test_known_tap_service(tapService: Tuple[str, str]) -> None:
