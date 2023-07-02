@@ -89,7 +89,7 @@ def lookForParametersInGaia(
 
     tapService = tap.getServiceEndpoint("GAIA")
     if tapService is None:
-        raise SystemError("No endpoint for such TAP service in the list")
+        raise ValueError("No endpoint for such TAP service in the list")
     foundCnt = 0
     for star in stars:
         gaiaID = stars[star]

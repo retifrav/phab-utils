@@ -28,9 +28,9 @@ def openPickleAsPandasTable(f: Union[str, pathlib.Path]) -> pandas.DataFrame:
     else:
         filePath = f
     if not filePath.exists():
-        raise SystemError(f"The path [{filePath}] does not exist")
+        raise ValueError(f"The path [{filePath}] does not exist")
     if not filePath.is_file():
-        raise SystemError(f"The path [{filePath}] is not a file")
+        raise ValueError(f"The path [{filePath}] is not a file")
     return pandas.read_pickle(filePath)
 
 
@@ -65,9 +65,9 @@ def mergePickles(
         inputPath = picklesToMergePath
 
     if not inputPath.exists():
-        raise SystemError(f"The path [{inputPath}] does not exist")
+        raise ValueError(f"The path [{inputPath}] does not exist")
     if not inputPath.is_dir():
-        raise SystemError(f"The [{inputPath}] is not a folder")
+        raise ValueError(f"The [{inputPath}] is not a folder")
 
     picklesToMerge = list(inputPath.glob("**/*.pkl"))
 

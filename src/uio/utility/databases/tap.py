@@ -112,8 +112,8 @@ def getServiceEndpoint(tapServiceName: str) -> Optional[str]:
 
     tapServiceEndpoint = tap.getServiceEndpoint("PADC")
     if tapServiceEndpoint is None:
-        raise SystemError("No endpoint for such TAP service in the list")
-    print(tapServiceEndpoint)
+        raise ValueError("No endpoint for such TAP service in the list")
+    #print(tapServiceEndpoint)
     ```
     """
     tapService = services.get(tapServiceName)

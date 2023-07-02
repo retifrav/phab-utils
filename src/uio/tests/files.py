@@ -8,10 +8,10 @@ def test_open_pickle_as_pandas_table_fail(
     somethingThatDoesntExist: str
 ) -> None:
     # openning a non-existent path
-    with pytest.raises(SystemError, match=r"^The path \[.*\] does not exist$"):
+    with pytest.raises(ValueError, match=r"^The path \[.*\] does not exist$"):
         pnd = pickle.openPickleAsPandasTable(somethingThatDoesntExist)
     # openning a folder instead of a file
-    with pytest.raises(SystemError, match=r"^The path \[.*\] is not a file$"):
+    with pytest.raises(ValueError, match=r"^The path \[.*\] is not a file$"):
         pnd = pickle.openPickleAsPandasTable(".")
 
 
