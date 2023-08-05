@@ -4,10 +4,14 @@
 
 - [About](#about)
 - [Installing](#installing)
-    - [From PyPI](#from-pypi)
-    - [From sources](#from-sources)
-        - [Newer versions](#newer-versions)
-        - [Older versions](#older-versions)
+  - [From PyPI](#from-pypi)
+  - [From sources](#from-sources)
+    - [Newer versions](#newer-versions)
+    - [Older versions](#older-versions)
+- [Bugs](#bugs)
+  - [pos must be nonnegative and less than window_length](#pos-must-be-nonnegative-and-less-than-window_length)
+  - [InvalidIndexError](#invalidindexerror)
+  - [Unhashable type MaskedNDArray](#unhashable-type-maskedndarray)
 
 <!-- /MarkdownTOC -->
 
@@ -240,23 +244,65 @@ $ pip uninstall matplotlib
 $ pip install matplotlib==3.3.3
 ```
 
-Trying to run now should fucking finally go fine. Until this:
+Trying to run now should finally go fine.
+
+## Bugs
+
+### pos must be nonnegative and less than window_length
+
+Reported in <https://github.com/ekaterinailin/AltaiPony/issues/78>.
 
 ``` sh
 ValueError: pos must be nonnegative and less than window_length.
+```
+
+Script to reproduce:
+
+``` py
+from altaipony.lcio import from_mast
+import pandas
+
+flc = from_mast(
+    "TRAPPIST-1",
+    mode="LC",
+    cadence="short",
+    mission="K2"
+)
+
+for j in range(len(flc)):
+    print(f"\n--- {j} ---\n")
+    # detrend curve
+    flcd = flc[j].detrend("savgol")
+    # find flares
+    flcd = flcd.find_flares(N1=3, N2=1, N3=3, minsep=3)
+    flcdpanda = flcd.flares
+    # print(flcdpanda)
+    if not flcdpanda.empty:
+        # injection of simulated flares
+        flcd, fakeflc = flcd.sample_flare_recovery(
+            inject_before_detrending=True,
+            mode="savgol",
+            iterations=20,
+            fakefreq=2,
+            ampl=[1e-4, 0.5],
+            dur=[.001/6., 0.1/6.]
+        )
+    else:
+        print("DataFrame is empty, no flares")
 ```
 
 Not sure what is the right way to resolve this, but patching the sources like so does get rid of that error:
 
 ``` patch
 diff --git a/altaipony/altai.py b/altaipony/altai.py
-index 12b862b..5909190 100755
+index 1d73d47..78ebb12 100755
 --- a/altaipony/altai.py
 +++ b/altaipony/altai.py
-@@ -275,6 +275,11 @@ def detrend_savgol(lc, window_length=None, pad=3, printwl=False, **kwargs):
+@@ -274,6 +274,12 @@ def detrend_savgol(lc, window_length=None, pad=3, printwl=False, **kwargs):
              wl = np.floor(.1 / dt)
              if wl % 2 == 0:
                  wl = wl + 1
++
 +        # don't know what is a proper fallback in this situation,
 +        # but since later it takes maximum of this value and 5,
 +        # then 0 seems to be okay
@@ -267,4 +313,201 @@ index 12b862b..5909190 100755
          wl = max(wl, 5) #wl must be larger than polyorder
 ```
 
-If you installed the package with `-e`, then this change will have an effect immediately.
+### InvalidIndexError
+
+Reported in <https://github.com/ekaterinailin/AltaiPony/issues/77>.
+
+Script to reproduce:
+
+``` py
+from altaipony.lcio import from_mast
+import pandas
+
+all_flares = pandas.DataFrame()
+
+flc = from_mast(
+    "Kepler-114",
+    mode="LC",
+    cadence="short",
+    mission="Kepler"
+)
+
+for j in range(len(flc)):
+    print(f"\n--- {j} ---\n")
+    # detrend curve
+    flcd = flc[j].detrend("savgol")
+    # find flares
+    flcd = flcd.find_flares(N1=3, N2=1, N3=3, minsep=3)
+    flcdpanda = flcd.flares
+    # print(flcdpanda)
+    if not flcdpanda.empty:
+        # injection of simulated flares
+        flcd, fakeflc = flcd.sample_flare_recovery(
+            inject_before_detrending=True,
+            mode="savgol",
+            iterations=20,
+            fakefreq=2,
+            ampl=[1e-4, 0.5],
+            dur=[.001/6., 0.1/6.]
+        )
+        print(f"Total number of injected flares is {flcd.fake_flares.shape[0]}")
+
+        flcc = flcd.characterize_flares(ampl_bins=10, dur_bins=10)
+        flcdpanda = flcc.flares
+        # print(flcdpanda)
+
+        all_flares = pandas.concat(
+            [
+                all_flares,
+                flcdpanda
+            ],
+            ignore_index=True
+        )
+    else:
+        print("DataFrame is empty, no flares")
+
+print(all_flares)
+```
+
+The error:
+
+``` sh
+Detrending fake LC:
+
+Found 8 candidate(s) in the (0,5731) gap.
+100%|################################################################################################################################################################|
+The total number of injected flares is 1200.
+Traceback (most recent call last):
+  File "/path/to/some.py", line 47, in <module>
+    flcc = flcd.characterize_flares(ampl_bins=10, dur_bins=10)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/path/to/AltaiPony/altaipony/flarelc.py", line 947, in characterize_flares
+    flares = wrap_characterization_of_flares(flc.fake_flares, flc.flares,
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/path/to/AltaiPony/altaipony/injrecanalysis.py", line 44, in wrap_characterization_of_flares
+    flcc, dscc = characterize_flares(flares, injrec, otherfunc="count",
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/path/to/AltaiPony/altaipony/injrecanalysis.py", line 111, in characterize_flares
+    flares[typ] = flares.apply(helper, axis=1)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/pandas/core/frame.py", line 9423, in apply
+    return op.apply().__finalize__(self, method="apply")
+           ^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/pandas/core/apply.py", line 678, in apply
+    return self.apply_standard()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/pandas/core/apply.py", line 798, in apply_standard
+    results, res_index = self.apply_series_generator()
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/pandas/core/apply.py", line 814, in apply_series_generator
+    results[i] = self.f(v)
+                 ^^^^^^^^^
+  File "/path/to/AltaiPony/altaipony/injrecanalysis.py", line 108, in <lambda>
+    helper = lambda x: multiindex_into_df_with_nans(x, d,
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/path/to/AltaiPony/altaipony/injrecanalysis.py", line 231, in multiindex_into_df_with_nans
+    return df.loc[(x[i1], x[i2]), i3]
+           ~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/pandas/core/indexing.py", line 1097, in __getitem__
+    return self._getitem_tuple(key)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/pandas/core/indexing.py", line 1280, in _getitem_tuple
+    return self._getitem_lowerdim(tup)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/pandas/core/indexing.py", line 976, in _getitem_lowerdim
+    return self._getitem_nested_tuple(tup)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/pandas/core/indexing.py", line 1077, in _getitem_nested_tuple
+    obj = getattr(obj, self.name)._getitem_axis(key, axis=axis)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/pandas/core/indexing.py", line 1343, in _getitem_axis
+    return self._get_label(key, axis=axis)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/pandas/core/indexing.py", line 1293, in _get_label
+    return self.obj.xs(label, axis=axis)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/pandas/core/generic.py", line 4088, in xs
+    loc, new_index = index._get_loc_level(key, level=0)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/pandas/core/indexes/multi.py", line 2998, in _get_loc_level
+    indexer = self.get_loc(key)
+              ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/pandas/core/indexes/multi.py", line 2795, in get_loc
+    self._check_indexing_error(key)
+  File "/usr/local/lib/python3.11/site-packages/pandas/core/indexes/multi.py", line 2516, in _check_indexing_error
+    raise InvalidIndexError(key)
+pandas.errors.InvalidIndexError: (MaskedNDArray(0.00629842), 0.004086749358975794)
+```
+
+Patch:
+
+``` patch
+diff --git a/altaipony/injrecanalysis.py b/altaipony/injrecanalysis.py
+index cb9234f..36ac505 100644
+--- a/altaipony/injrecanalysis.py
++++ b/altaipony/injrecanalysis.py
+@@ -229,8 +229,14 @@ def multiindex_into_df_with_nans(x, df, i1="ampl_rec", i2="dur", i3="edrat"):
+     """
+     try:
+         return df.loc[(x[i1], x[i2]), i3]
+-    except KeyError:
++    except (
++        KeyError,
++        pd.errors.InvalidIndexError
++    ):
+         return np.nan
++    except Exception as ex:
++        print(f"Unexpected exception ({type(ex)}): {ex}")
++        raise
+ 
+ 
+ def percentile(x, q):
+```
+
+### Unhashable type MaskedNDArray
+
+After patching the uncaught [InvalidIndexError](#invalidindexerror) there will be a new error after that:
+
+``` sh
+Traceback (most recent call last):
+  File "/path/to/some.py", line 33, in <module>
+    flcc = flcd.characterize_flares(ampl_bins=10, dur_bins=10)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/path/to/AltaiPony/altaipony/flarelc.py", line 947, in characterize_flares
+    flares = wrap_characterization_of_flares(flc.fake_flares, flc.flares,
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/path/to/AltaiPony/altaipony/injrecanalysis.py", line 54, in wrap_characterization_of_flares
+    fl = fl.merge(flcc)
+         ^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/pandas/core/frame.py", line 9843, in merge
+    return merge(
+           ^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/pandas/core/reshape/merge.py", line 162, in merge
+    return op.get_result(copy=copy)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/pandas/core/reshape/merge.py", line 809, in get_result
+    join_index, left_indexer, right_indexer = self._get_join_info()
+                                              ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/pandas/core/reshape/merge.py", line 1065, in _get_join_info
+    (left_indexer, right_indexer) = self._get_join_indexers()
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/pandas/core/reshape/merge.py", line 1038, in _get_join_indexers
+    return get_join_indexers(
+           ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/pandas/core/reshape/merge.py", line 1665, in get_join_indexers
+    zipped = zip(*mapped)
+             ^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/pandas/core/reshape/merge.py", line 1662, in <genexpr>
+    _factorize_keys(left_keys[n], right_keys[n], sort=sort, how=how)
+  File "/usr/local/lib/python3.11/site-packages/pandas/core/reshape/merge.py", line 2442, in _factorize_keys
+    llab = rizer.factorize(lk)  # type: ignore[arg-type]
+           ^^^^^^^^^^^^^^^^^^^
+  File "pandas/_libs/hashtable.pyx", line 122, in pandas._libs.hashtable.ObjectFactorizer.factorize
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7288, in pandas._libs.hashtable.PyObjectHashTable.get_labels
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7194, in pandas._libs.hashtable.PyObjectHashTable._unique
+TypeError: unhashable type: 'MaskedNDArray'
+```
+
+The script to reproduce it is the same as in [InvalidIndexError](#invalidindexerror).
+
+No idea how to fix it.
