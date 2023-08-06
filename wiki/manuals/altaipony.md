@@ -466,6 +466,8 @@ index cb9234f..36ac505 100644
 
 ### Unhashable type MaskedNDArray
 
+Reported in <https://github.com/ekaterinailin/AltaiPony/issues/79>.
+
 After patching the uncaught [InvalidIndexError](#invalidindexerror) there will be a new error after that:
 
 ``` sh
