@@ -15,7 +15,7 @@ from typing import Optional, List, Dict
 
 
 def lookForParametersInGaia(
-    pickleWithOriginalTable: str,
+    originalTable: pandas.DataFrame,
     adqlTable: str,
     adqlParameters: List[str],
     simbadIDversion: Optional[str] = None
@@ -32,10 +32,12 @@ def lookForParametersInGaia(
     Example:
 
     ``` py
+    from uio.utility.files import pickle
     from uio.tasks import reconfirming_stellar_parameters
 
+    originalTable = pickle.openPickleAsPandasTable("./data/systems-528n.pkl")
     tbl = reconfirming_stellar_parameters.lookForParametersInGaia(
-        "./data/systems-528n.pkl",
+        originalTable,
         "gaiadr3.astrophysical_parameters",
         [
             "age_flame",
@@ -58,15 +60,14 @@ def lookForParametersInGaia(
     ```
 
     You might need to provide `simbadIDversion` parameter (*the `dr3` value
-    here*) if SIMBAD (`uio.utility.databases.simbad.getOtherIDfromSimbad`) returns
-    IDs like `DR3 2135237601028549888` and you need to get exactly
+    here*) if SIMBAD (`uio.utility.databases.simbad.getOtherIDfromSimbad`)
+    returns IDs like `DR3 2135237601028549888` and you need to get exactly
     the DR3 ones.
 
     As a result, your original table `tbl` will be enriched with additional
     columns according to the list of provided astrophysical parameters.
     """
 
-    originalTable = pickle.openPickleAsPandasTable(pickleWithOriginalTable)
     starNames = originalTable["star_name"].unique()
 
     print("\nGetting GAIA IDs from SIMBAD...\n")
