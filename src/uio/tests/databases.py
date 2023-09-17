@@ -52,6 +52,26 @@ def test_getting_parameter_from_padc() -> None:
     assert granuleUID == planetName
 
 
+def test_get_light_curve_stats() -> None:
+    stats = lightcurves.getLightCurveStats("LTT 1445 A", detailed=False)
+    assert stats
+    assert len(stats) > 0
+
+
 def test_get_light_curve_stats_fail(somethingThatDoesntExist: str) -> None:
     stats = lightcurves.getLightCurveStats(somethingThatDoesntExist)
-    assert stats is None
+    assert not stats
+
+
+def test_get_light_curve_ids() -> None:
+    ids = lightcurves.getLightCurveIDs("LTT 1445 A")
+    assert ids
+    assert len(ids) > 0
+
+
+def test_get_light_curve_ids_fail(somethingThatDoesntExist: str) -> None:
+    with pytest.raises(
+            ValueError,
+            match=r"^Didn't find any results for this star$"
+    ):
+        stats = lightcurves.getLightCurveIDs(somethingThatDoesntExist)
