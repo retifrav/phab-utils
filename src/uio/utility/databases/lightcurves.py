@@ -208,7 +208,17 @@ def getLightCurveIDs(
             if any(lightCurveIDs[m]) and priorityThreshold > 1:
                 break
             if cp in stats[m]:
-                lightCurveIDs[m].append(cp)
+                # print(f"Count [{cp}]: {stats[m][cp]['total']}")
+                totalCnt = stats[m][cp].get("total")
+                if totalCnt and totalCnt != 0:
+                    lightCurveIDs[m].append(cp)
+                # else:
+                #     print(
+                #         " ".join((
+                #             f"[WARNING] The [{cp}] cadence count",
+                #             f"in [{m}] is 0 (or missing)"
+                #         ))
+                #     )
             priorityThreshold += 1
 
     return lightCurveIDs
