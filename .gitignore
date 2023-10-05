@@ -7,3 +7,5 @@ documentation/_deploy
 
 *.egg-info
 *.sublime-workspace
+
+.DS_Store

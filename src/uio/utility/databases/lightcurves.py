@@ -205,8 +205,8 @@ def getLightCurveIDs(
         for cp in cadencePriority:
             # if there is already fast or short cadence in the list,
             # don't take long cadence (except for mission K2, because
-            # its long cadence is what's most important even if there are
-            # also fast and short ones)
+            # its long cadence is what's most important even if
+            # there are also fast and short ones)
             if any(lightCurveIDs[m]) and priorityThreshold > 1 and m != "K2":
                 break
             if cp in stats[m]:
