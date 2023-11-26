@@ -8,9 +8,12 @@ import pandas
 from typing import Union, List
 
 
-def openPickleAsPandasTable(f: Union[str, pathlib.Path]) -> pandas.DataFrame:
+
+def openPickleAsPandasTable(
+    pickleFilePath: Union[str, pathlib.Path]
+) -> pandas.DataFrame:
     """
-    Read a [Pandas](https://pandas.pydata.org) table from provided pickle file
+    Read [Pandas](https://pandas.pydata.org) table from provided pickle file
     (*after checking that the file exists and that it is actually a file*).
 
     Example:
@@ -23,15 +26,40 @@ def openPickleAsPandasTable(f: Union[str, pathlib.Path]) -> pandas.DataFrame:
     ```
     """
     filePath: pathlib.Path = pathlib.Path()
-    if isinstance(f, str):
-        filePath = pathlib.Path(f)
+    if isinstance(pickleFilePath, str):
+        filePath = pathlib.Path(pickleFilePath)
     else:
-        filePath = f
+        filePath = pickleFilePath
     if not filePath.exists():
         raise ValueError(f"The path [{filePath}] does not exist")
     if not filePath.is_file():
         raise ValueError(f"The path [{filePath}] is not a file")
     return pandas.read_pickle(filePath)
+
+
+def savePandasTableAsPickle(
+    pandasTable: pandas.DataFrame,
+    pickleFilePath: Union[str, pathlib.Path]
+) -> None:
+    """
+    Save [Pandas](https://pandas.pydata.org) table to a pickle file.
+
+    Example:
+
+    ``` py
+    from uio.utility.files import pickle
+
+    savePandasTableAsPickle(pnd, "/path/to/some.pkl")
+    ```
+    """
+    filePath: pathlib.Path = pathlib.Path()
+    if isinstance(pickleFilePath, str):
+        filePath = pathlib.Path(pickleFilePath)
+    else:
+        filePath = pickleFilePath
+    if filePath.exists():
+        raise ValueError(f"The [{filePath}] file already exists")
+    pandasTable.to_pickle(filePath)
 
 
 def mergePickles(
