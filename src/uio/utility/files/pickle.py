@@ -7,6 +7,7 @@ import pandas
 
 from typing import Union, List
 
+from ..logs.log import logger
 
 
 def openPickleAsPandasTable(
@@ -64,15 +65,18 @@ def savePandasTableAsPickle(
 
 def mergePickles(
     picklesToMergePath: Union[str, pathlib.Path],
-    resultingPicklePath: Union[str, pathlib.Path]
-) -> None:
+    resultingPicklePath: Union[None, str, pathlib.Path]
+) -> Union[None, pandas.DataFrame]:
     """
-    Merge several pickle files into one. Looks for pickle files
+    Merge several pickle files into one. Looks for pickle files (*`*.pkl`*)
     in the provided folder, reads them to Pandas tables
-    (*with `uio.utility.files.pickle.openPickleAsPandasTable`*),
-    concatenates those into one and saves to resulting pickle.
-    Checks for existing files, sorts the index and verifies integrity
-    (*will raise an exception on duplicate/overlapping index*).
+    (*with `uio.utility.files.pickle.openPickleAsPandasTable`*)
+    and concatenates those into one final Pandas table. Sorts the index
+    and verifies integrity (*will raise an exception
+    on duplicate/overlapping index*).
+
+    Optionally saves resulting Pandas table to file (*if provided path
+    is not `None`*) or just returns it.
 
     Example:
 
@@ -84,6 +88,14 @@ def mergePickles(
         "/path/to/pickles/to/merge/",
         "/path/to/where/to/save/result.pkl"
     )
+
+    # or
+
+    pnd = pickle.mergePickles(
+        "/path/to/pickles/to/merge/",
+        None
+    )
+    #print(pnd.head(15))
     ```
     """
     inputPath: pathlib.Path = pathlib.Path()
@@ -102,30 +114,27 @@ def mergePickles(
     frames = []
 
     filesCount = len(picklesToMerge)
-    print(f"Found files: {filesCount}\n")
+    logger.debug(f"Found files: {filesCount}")
     if filesCount == 0:
         raise ValueError("There are no files in the provided folder")
     # elif filesCount == 1:
-    #     raise ValueError("[ERROR] There is only one file in the provided folder")
+    #     raise ValueError(
+    #         "[ERROR] There is only one file in the provided folder"
+    #     )
     else:
         for p in picklesToMerge:
-            print(f"Merging {p}...")
+            logger.info(f"Merging {p}...")
             tbl = openPickleAsPandasTable(p)
-            print(f"Records in this pickle: {len(tbl)}\n")
+            logger.debug(f"Records in this pickle: {len(tbl)}")
             frames.append(tbl)
 
     mergedTable = pandas.concat(frames, verify_integrity=True).sort_index()
-    print(f"Total records in the resulting table: {len(mergedTable)}")
+    logger.debug(f"Total records in the resulting table: {len(mergedTable)}")
     # print("Preview of the first rows:")
     # print(mergedTable.head(15))
 
-    resultingFilePath: pathlib.Path = pathlib.Path()
-    if isinstance(resultingPicklePath, str):
-        resultingFilePath = pathlib.Path(resultingPicklePath)
+    if resultingPicklePath:
+        savePandasTableAsPickle(mergedTable, resultingPicklePath)
+        return None
     else:
-        resultingFilePath = resultingPicklePath
-
-    if resultingFilePath.exists():
-        raise ValueError(f"The [{resultingFilePath}] file already exists")
-
-    mergedTable.to_pickle(resultingFilePath)
+        return mergedTable

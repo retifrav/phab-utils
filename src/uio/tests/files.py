@@ -41,3 +41,21 @@ def test_save_pandas_table_as_pickle() -> None:
             ValueError, match=r"^The \[.*\] file already exists$"
         ):
             pickle.savePandasTableAsPickle(pnd, tempFilePath)
+
+
+def test_merge_pickles_return_as_pandas() -> None:
+    pnd: pandas.DataFrame = pickle.mergePickles(
+        "./data/merge-pickles/",
+        None
+    )
+    assert len(pnd) == 6
+
+
+def test_merge_pickles_save_to_file() -> None:
+    with tempfile.TemporaryDirectory() as tempDir:
+        tempFilePath = pathlib.Path(tempDir) / "merged.pkl"
+        pickle.mergePickles(
+            "./data/merge-pickles/",
+            tempFilePath
+        )
+        assert tempFilePath.exists()
