@@ -3,15 +3,15 @@ Reconfirming stellar parameters, enriching original datasets
 with additional data from various data sources.
 """
 
-from ..utility.files import pickle
-from ..utility.databases import tap
-from ..utility.databases import simbad
-
 import pandas
 import numpy
 # import json
 
 from typing import Optional, List, Dict
+
+from ..utility.files import pickle
+from ..utility.databases import tap
+from ..utility.databases import simbad
 
 
 def lookForParametersInGaia(
