@@ -14,6 +14,8 @@ import pyvo
 
 from typing import Optional, Dict, List, Tuple, Any
 
+from ..logs.log import logger
+
 services: Dict[str, Dict] = {
     "NASA":
     {
@@ -125,8 +127,8 @@ def getServiceEndpoint(tapServiceName: str) -> Optional[str]:
             f"[ERROR] {tapServiceName} has no registered endpoint"
             return None
     else:
-        print(
-            f"[ERROR] There is no TAP service under the name {tapServiceName}"
+        logger.error(
+            f"There is no TAP service under the name {tapServiceName}"
         )
         return None
 
@@ -194,7 +196,7 @@ def getStellarParameterFromNASA(
         ))
     )
     if results:
-        # print(f"All results for this parameter: {results}")
+        # logger.debug(f"All results for this parameter: {results}")
         val = results[0].get(param)
         return val
     else:
@@ -231,7 +233,7 @@ def getPlanetaryParameterFromNASA(
         ))
     )
     if results:
-        # print(f"All results for this parameter: {results}")
+        # logger.debug(f"All results for this parameter: {results}")
         return results[0].get(param)
     else:
         return None

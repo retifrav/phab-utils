@@ -8,6 +8,8 @@ import re
 
 from typing import Optional
 
+from ..logs.log import logger
+
 
 def getOtherIDfromSimbad(
     starName: str,
@@ -28,9 +30,9 @@ def getOtherIDfromSimbad(
     otherID = None
     otherIDs = Simbad.query_objectids(starName)
     if otherIDs is None:
-        print(
+        logger.warning(
             " ".join((
-                "- [WARNING] Simbad database doesn't have information",
+                "Simbad database doesn't have information",
                 f"about [{starName}]"
             ))
         )
