@@ -2,6 +2,8 @@
 
 <!-- MarkdownTOC -->
 
+- [0.4.0](#040)
+- [0.3.2](#032)
 - [0.3.1](#031)
 - [0.3.0](#030)
 - [0.2.0](#020)
@@ -9,13 +11,39 @@
 
 <!-- /MarkdownTOC -->
 
+## 0.4.0
+
+Released on `2023-11-27`.
+
+- `datasets` - new module for data processing
+    + `mergeTables()` - merging several tables into one
+    + `deduplicateTable()` - finding duplicate rows in the table
+- `files`
+    + `pickles`
+        * `mergePickles()` - option for saving to file or returning merging Pandas table
+- `logs` - new module for logging
+
+## 0.3.2
+
+Released on `2023-10-05`.
+
+- the package can be installed from [PyPI](https://pypi.org/project/uio-exoplanet-group/) now
+- disabled Git LFS because of GitHub's LFS policy/pricing
+- using `ValueError` where suitable instead of `SystemError` for everything
+- `databases`
+    + `lightcurves`
+        * `getLightCurveIDs()` - geting missions and cadences based on light curves stats
+- wiki
+    + how to build RH15D from sources
+    + updated instructions for installing AltaiPony
+
 ## 0.3.1
 
 Released on `2023-07-01`.
 
 - `databases`
     + `lightcurves`
-        * gathering light curves cadence values statistics
+        * `getLightCurveStats()` - gathering light curves cadence values statistics
 - documentation
     + favicon, new poster and PHAB domain
 - wiki
