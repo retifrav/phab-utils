@@ -19,9 +19,9 @@ from ..logs.log import logger
 
 def mergeTables(frames: List[pandas.DataFrame]) -> pandas.DataFrame:
     """
-    Merge (*concatenate*) several Pandas tables into one. Sorts the index
-    and verifies integrity (*will raise an exception on duplicate/overlapping
-    index*).
+    Merge (*concatenate*) several tables into one. Sorts the index
+    and verifies integrity (*will raise an exception
+    on duplicate/overlapping index*).
 
     Example:
 

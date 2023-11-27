@@ -139,7 +139,8 @@ def queryService(
 ) -> Optional[pyvo.dal.tap.TAPResults]:
     """
     Send [ADQL](https://ivoa.net/documents/ADQL/) request to the TAP service
-    and return results. Those can be then converted to a Pandas table.
+    and return results. Those can be then converted to
+    a [Pandas](https://pandas.pydata.org) table.
 
     Example:
 

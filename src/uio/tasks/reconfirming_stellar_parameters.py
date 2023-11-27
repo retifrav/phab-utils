@@ -23,7 +23,7 @@ def lookForParametersInGaia(
     """
     Looking for specified parameters in GAIA database:
 
-    1. Opens a pickle file with original Pandas table;
+    1. Opens a pickle file with original [Pandas](https://pandas.pydata.org) table;
     2. Extracts unique list of star names;
     3. Gets their GAIA IDs from Simbad database;
     4. Queries GAIA database for given parameters;
