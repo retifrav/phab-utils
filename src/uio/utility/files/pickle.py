@@ -5,8 +5,9 @@ File operations with [pickles](https://docs.python.org/3/library/pickle.html).
 import pathlib
 import pandas
 
-from typing import Union, List
+from typing import Optional, List, Union
 
+from ..datasets import pandas as pnd
 from ..logs.log import logger
 
 
@@ -66,22 +67,20 @@ def savePandasTableAsPickle(
 def mergePickles(
     picklesToMergePath: Union[str, pathlib.Path],
     resultingPicklePath: Union[None, str, pathlib.Path]
-) -> Union[None, pandas.DataFrame]:
+) -> Optional[pandas.DataFrame]:
     """
     Merge several pickle files into one. Looks for pickle files (*`*.pkl`*)
     in the provided folder, reads them to Pandas tables
     (*with `uio.utility.files.pickle.openPickleAsPandasTable`*)
-    and concatenates those into one final Pandas table. Sorts the index
-    and verifies integrity (*will raise an exception
-    on duplicate/overlapping index*).
+    and concatenates those into one final Pandas table
+    (*using `uio.utility.datasets.pandas.mergeTables`*).
 
-    Optionally saves resulting Pandas table to file (*if provided path
-    is not `None`*) or just returns it.
+    Saves resulting Pandas table to file (*if provided path is not `None`*)
+    or just returns it.
 
     Example:
 
     ``` py
-    import pathlib
     from uio.utility.files import pickle
 
     pickle.mergePickles(
@@ -91,11 +90,11 @@ def mergePickles(
 
     # or
 
-    pnd = pickle.mergePickles(
+    tbl = pickle.mergePickles(
         "/path/to/pickles/to/merge/",
         None
     )
-    #print(pnd.head(15))
+    #print(tbl.head(15))
     ```
     """
     inputPath: pathlib.Path = pathlib.Path()
@@ -128,10 +127,7 @@ def mergePickles(
             logger.debug(f"Records in this pickle: {len(tbl)}")
             frames.append(tbl)
 
-    mergedTable = pandas.concat(frames, verify_integrity=True).sort_index()
-    logger.debug(f"Total records in the resulting table: {len(mergedTable)}")
-    # print("Preview of the first rows:")
-    # print(mergedTable.head(15))
+    mergedTable = pnd.mergeTables(frames)
 
     if resultingPicklePath:
         savePandasTableAsPickle(mergedTable, resultingPicklePath)
