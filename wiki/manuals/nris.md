@@ -114,7 +114,9 @@ If the task you'd like to run that way is a rather long one, first start a [scre
 
 ### Queued
 
-To submit a job to the queue, you need to write a [job script](https://documentation.sigma2.no/jobs/job_scripts.html). For example, here's a single-process job for `betzy`:
+To submit a job to the queue, you need to write a [job script](https://documentation.sigma2.no/jobs/job_scripts.html). Be aware that jobs can be quite expensive in billing hours, especially of you'll request 4 nodes with many CPUs, but in fact your job would only use a single CPU on one node, leaving you with a lot of wasted resources which you need to pay for.
+
+So for example, here's a single-process job for `betzy`:
 
 ``` sh
 $ mkdir -p ~/jobs/outputs
@@ -128,7 +130,7 @@ $ nano ~/jobs/some.sh
 #SBATCH --account=YOUR-PROJECT-ID
 #SBATCH --job-name=some
 #SBATCH --partition=accel
-#SBATCH --nodes=1 --ntasks=1 --ntasks-per-node=1 --cpus-per-task=1
+#SBATCH --nodes=1 --ntasks=1 --ntasks-per-node=1 --cpus-per-task=1 --gpus=0
 #SBATCH --mem=40G
 #SBATCH --time=08:00:00
 #SBATCH --output=/cluster/home/YOUR-USERNAME/jobs/outputs/%j.log
@@ -178,7 +180,7 @@ echo '--- Slurm statistics ---'
 $ chmod +x ~/jobs/some.sh
 ```
 
-For `saga` the `SBATCH` arguments would be different:
+For `saga` the `SBATCH` arguments would be different (*but actually, don't use `saga` for anything, because even though it is cheaper than others, it is also slow as shit*):
 
 ``` sh
 #SBATCH --account=YOUR-PROJECT-ID
