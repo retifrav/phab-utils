@@ -243,7 +243,13 @@ There are different [job types](https://documentation.sigma2.no/jobs/choosing_jo
 #SBATCH --qos=preproc
 ```
 
-Different job types have different cost/pricing.
+or, which depends on a particular server:
+
+``` sh
+#SBATCH --partition=accel
+```
+
+The point is that different job types have different cost/pricing.
 
 ## Installing software
 
