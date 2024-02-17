@@ -70,8 +70,8 @@ def mergePickles(
 ) -> Optional[pandas.DataFrame]:
     """
     Merge several pickle files into one. Looks for pickle files (*`*.pkl`*)
-    in the provided folder, reads them to [Pandas](https://pandas.pydata.org) tables
-    (*with `uio.utility.files.pickle.openPickleAsPandasTable`*)
+    in the provided folder, reads them to [Pandas](https://pandas.pydata.org)
+    tables (*with `uio.utility.files.pickle.openPickleAsPandasTable`*)
     and concatenates those into one final Pandas table
     (*using `uio.utility.datasets.pandas.mergeTables`*).
 
