@@ -22,7 +22,8 @@ Released on `2024-08-23`.
     + `tap`
         * `getStellarParameterFromSimbad()` - querying stellar parameters from SIMBAD
 - `datasets`
-    + `dropMeaninglessRows()` - dropping/removing meaningless rows from a table
+    + `pandas`
+        * `dropMeaninglessRows()` - dropping/removing meaningless rows from a table
 - wiki
     + running jobs on NRIS
 
@@ -31,8 +32,9 @@ Released on `2024-08-23`.
 Released on `2023-11-27`.
 
 - `datasets` - new module for data processing
-    + `mergeTables()` - merging several tables into one
-    + `deduplicateTable()` - finding duplicate rows in the table
+    + `pandas`
+        * `mergeTables()` - merging several tables into one
+        * `deduplicateTable()` - finding duplicate rows in the table
 - `files`
     + `pickles`
         * `mergePickles()` - option for saving to file or returning merging Pandas table

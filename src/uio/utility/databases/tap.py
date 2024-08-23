@@ -374,8 +374,8 @@ def getStellarParameterFromSimbad(
 
     Supports querying by main ID or by object ID. Main ID is the star name
     that is chosen to be stored in `main_id` field of the `basic` table.
-    If main ID is not known, then you will need to find the SIMBAD object ID
-    first.
+    If main ID is not known, then first you will need to find the SIMBAD
+    object ID with `uio.utility.databases.simbad.findObjectID`.
 
     Example when main ID is known:
 
