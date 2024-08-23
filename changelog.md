@@ -2,6 +2,7 @@
 
 <!-- MarkdownTOC -->
 
+- [0.5.0](#050)
 - [0.4.0](#040)
 - [0.3.2](#032)
 - [0.3.1](#031)
@@ -10,6 +11,20 @@
 - [0.1.0](#010)
 
 <!-- /MarkdownTOC -->
+
+## 0.5.0
+
+Released on `2024-08-23`.
+
+- `databases`
+    + `simbad`
+        * `findObjectID()` - finding SIMBAD object ID
+    + `tap`
+        * `getStellarParameterFromSimbad()` - querying stellar parameters from SIMBAD
+- `datasets`
+    + `dropMeaninglessRows()` - dropping/removing meaningless rows from a table
+- wiki
+    + running jobs on NRIS
 
 ## 0.4.0
 
