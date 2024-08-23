@@ -88,7 +88,7 @@ def lookForParametersInGaia(
     for parameter in adqlParameters:
         originalTable[parameter] = numpy.array(numpy.NaN, dtype=float)
 
-    tapService = tap.getServiceEndpoint("GAIA")
+    tapService = tap.getServiceEndpoint("gaia")
     if tapService is None:
         raise ValueError("No endpoint for such TAP service in the list")
     foundCnt = 0

@@ -17,7 +17,7 @@ from typing import Optional, Dict, List, Tuple, Any
 from ..logs.log import logger
 
 services: Dict[str, Dict] = {
-    "NASA":
+    "nasa":
     {
         # case-sensitive URL
         "endpoint": "https://exoplanetarchive.ipac.caltech.edu/TAP",
@@ -36,11 +36,11 @@ services: Dict[str, Dict] = {
             "semi_major_axis"
         ]
     },
-    "PADC":
+    "padc":
     {
         "endpoint": "http://voparis-tap-planeto.obspm.fr/tap"
     },
-    "GAIA":
+    "gaia":
     {
         "endpoint": "https://gea.esac.esa.int/tap-server/tap"
     }
@@ -112,7 +112,7 @@ def getServiceEndpoint(tapServiceName: str) -> Optional[str]:
     ``` py
     from uio.utility.databases import tap
 
-    tapServiceEndpoint = tap.getServiceEndpoint("PADC")
+    tapServiceEndpoint = tap.getServiceEndpoint("padc")
     if tapServiceEndpoint is None:
         raise ValueError("No endpoint for such TAP service in the list")
     #print(tapServiceEndpoint)
@@ -148,7 +148,7 @@ def queryService(
     from uio.utility.databases import tap
 
     tbl = tap.queryService(
-        "http://voparis-tap-planeto.obspm.fr/tap",
+        tap.getServiceEndpoint("padc"),  # "http://voparis-tap-planeto.obspm.fr/tap"
         " ".join((
             "SELECT star_name, granule_uid, mass, radius, period, semi_major_axis",
             "FROM exoplanet.epn_core",
@@ -184,20 +184,20 @@ def getStellarParameterFromNASA(
     #print(val)
     ```
     """
-    serviceEndpoint = getServiceEndpoint("NASA")
+    serviceEndpoint = getServiceEndpoint("nasa")
     if not serviceEndpoint:
         raise ValueError("Couldn't get TAP service endpoint for NASA")
     results = queryService(
         serviceEndpoint,
         " ".join((
-            f"SELECT {param}",
+            f"SELECT {param}",  # TOP is broken in NASA: https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/#top-clause-is-broken
             f"FROM ps",
             f"WHERE hostname = '{systemName}' AND {param} IS NOT NULL",
             "ORDER BY pl_pubdate DESC"
         ))
     )
     if results:
-        # logger.debug(f"All results for this parameter: {results}")
+        # logger.debug(f"All results for this parameter:\n{results}")
         val = results[0].get(param)
         return val
     else:
@@ -221,20 +221,20 @@ def getPlanetaryParameterFromNASA(
     #print(val)
     ```
     """
-    serviceEndpoint = getServiceEndpoint("NASA")
+    serviceEndpoint = getServiceEndpoint("nasa")
     if not serviceEndpoint:
         raise ValueError("Couldn't get TAP service endpoint for NASA")
     results = queryService(
         serviceEndpoint,
         " ".join((
-            f"SELECT {param}",
+            f"SELECT {param}",  # TOP is broken in NASA: https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/#top-clause-is-broken
             f"FROM ps",
             f"WHERE pl_name = '{planetName}' AND {param} IS NOT NULL",
             "ORDER BY pl_pubdate DESC"
         ))
     )
     if results:
-        # logger.debug(f"All results for this parameter: {results}")
+        # logger.debug(f"All results for this parameter:\n{results}")
         return results[0].get(param)
     else:
         return None
@@ -268,7 +268,7 @@ def getParameterFromNASA(
     result = None
     if param in mappings["NASA-to-PADC"]["stars"]:  # get stellar parameter
         result = getStellarParameterFromNASA(systemName, param)
-    else:  # get planet parameter
+    else:  # get planetary parameter
         result = getPlanetaryParameterFromNASA(planetName, param)
     return result
 
@@ -318,7 +318,7 @@ def getParameterFromPADC(
     #print(val)
     ```
     """
-    serviceEndpoint = getServiceEndpoint("PADC")
+    serviceEndpoint = getServiceEndpoint("padc")
     if not serviceEndpoint:
         raise ValueError("Couldn't get TAP service endpoint for PADC")
     results = queryService(

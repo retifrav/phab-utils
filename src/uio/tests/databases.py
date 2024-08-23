@@ -8,7 +8,7 @@ from typing import Tuple
 
 @pytest.fixture
 def tapService() -> Tuple[str, str]:
-    return ("PADC", "http://voparis-tap-planeto.obspm.fr/tap")
+    return ("padc", "http://voparis-tap-planeto.obspm.fr/tap")
 
 
 def test_known_tap_service(tapService: Tuple[str, str]) -> None:
