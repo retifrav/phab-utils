@@ -43,6 +43,10 @@ services: Dict[str, Dict] = {
     "gaia":
     {
         "endpoint": "https://gea.esac.esa.int/tap-server/tap"
+    },
+    "simbad":
+    {
+        "endpoint": "http://simbad.cds.unistra.fr/simbad/sim-tap/sync"
     }
 }
 """
@@ -357,3 +361,100 @@ def getParameterErrorsFromPADC(
     errMin = getParameterFromPADC(planetName, f"{param}_error_min")
     errMax = getParameterFromPADC(planetName, f"{param}_error_max")
     return errMin, errMax
+
+
+def getStellarParameterFromSimbad(
+    objectID: Optional[int],
+    table: str,
+    param: str,
+    mainID: Optional[str] = None
+) -> Optional[Any]:
+    """
+    Get the latest (*the newest*) published stellar parameter from SIMBAD.
+
+    Supports querying by main ID or by object ID. Main ID is the star name
+    that is chosen to be stored in `main_id` field of the `basic` table.
+    If main ID is not known, then you will need to find the SIMBAD object ID
+    first.
+
+    Example when main ID is known:
+
+    ``` py
+    from uio.utility.databases import tap
+
+    val = tap.getStellarParameterFromSimbad(
+        None,
+        "mesVar",
+        "period",
+        "CD-29 2360"
+    )
+    #print(val)
+    ```
+
+    Example without knowning the main ID:
+
+    ``` py
+    from uio.utility.databases import simbad
+    from uio.utility.databases import tap
+
+    val = None
+    oid = simbad.findObjectID("PPM 725297")
+    if not oid:
+        print("Could not find SIMBAD object ID")
+    else:
+        val = tap.getStellarParameterFromSimbad(
+            oid,
+            "mesVar",
+            "period"
+        )
+    #print(val)
+    ```
+    """
+    if objectID is None and mainID is None:
+        raise ValueError(
+            " ".join((
+                "Either object ID or main ID has to be provided,",
+                "they cannot be missing both"
+            ))
+        )
+
+    if objectID is not None and mainID is not None:
+        raise ValueError(
+            " ".join((
+                "Either provide object ID or main ID but not both,",
+                "it is not clear what needs to be done",
+                "when both of them are provided"
+            ))
+        )
+
+    serviceEndpoint = getServiceEndpoint("simbad")
+    if not serviceEndpoint:
+        raise ValueError("Couldn't get TAP service endpoint for SIMBAD")
+
+    results = None
+    if objectID:  # query by object ID
+        results = queryService(
+            serviceEndpoint,
+            " ".join((
+                f"SELECT TOP 1 {param}",
+                f"FROM {table}",
+                f"WHERE oidref = {objectID} AND {param} IS NOT NULL",
+                "ORDER BY bibcode DESC"
+            ))
+        )
+    else:  # query by main ID
+        results = queryService(
+            serviceEndpoint,
+            " ".join((
+                f"SELECT TOP 1 {param}",
+                f"FROM {table} AS v",
+                "JOIN basic AS b ON v.oidref = b.oid",
+                f"WHERE b.main_id = '{mainID}' AND {param} IS NOT NULL",
+                "ORDER BY bibcode DESC"
+            ))
+        )
+    if results:
+        val = results[0].get(param)
+        return val
+    else:
+        return None
