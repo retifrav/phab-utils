@@ -77,12 +77,12 @@ def test_get_light_curve_ids_fail(somethingThatDoesntExist: str) -> None:
         stats = lightcurves.getLightCurveIDs(somethingThatDoesntExist)
 
 
-def test_find_object_id(somethingThatDoesntExist: str) -> None:
+def test_get_object_id(somethingThatDoesntExist: str) -> None:
     # an object that does exist
-    objectID = simbad.findObjectID("A2 146")
+    objectID = simbad.getObjectID("A2 146")
     assert objectID == 3308165
     # an object that does not exist
-    objectID = simbad.findObjectID(f"A2 146 {somethingThatDoesntExist}")
+    objectID = simbad.getObjectID(f"A2 146 {somethingThatDoesntExist}")
     assert objectID is None, \
         " ".join((
             "There shouldn't be a known object that would contain",
@@ -94,19 +94,17 @@ def test_get_stellar_parameter_from_simbad_by_main_id(
     somethingThatDoesntExist: str
 ) -> None:
     # parameter of an object that does exist
-    val = tap.getStellarParameterFromSimbad(
-        None,
+    val = tap.getStellarParameterFromSimbadByMainID(
+        "CD-29 2360",
         "mesVar",
-        "period",
-        "CD-29 2360"
+        "period"
     )
     assert val
     # parameter of an object that does not exist
-    val = tap.getStellarParameterFromSimbad(
-        None,
+    val = tap.getStellarParameterFromSimbadByMainID(
+        somethingThatDoesntExist,
         "mesVar",
         "period",
-        somethingThatDoesntExist
     )
     assert val is None, \
         " ".join((
@@ -117,7 +115,7 @@ def test_get_stellar_parameter_from_simbad_by_main_id(
 
 def test_get_stellar_parameter_from_simbad_by_object_id() -> None:
     # parameter of an object that does exist
-    val = tap.getStellarParameterFromSimbad(
+    val = tap.getStellarParameterFromSimbadByObjectID(
         817576,
         "mesVar",
         "period"
@@ -125,7 +123,7 @@ def test_get_stellar_parameter_from_simbad_by_object_id() -> None:
     assert val
     # parameter of an object that does not exist
     oidThatDoesNotExist = 123454321
-    val = tap.getStellarParameterFromSimbad(
+    val = tap.getStellarParameterFromSimbadByObjectID(
         oidThatDoesNotExist,
         "mesVar",
         "period"
@@ -137,32 +135,24 @@ def test_get_stellar_parameter_from_simbad_by_object_id() -> None:
         ))
 
 
-def test_get_stellar_parameter_from_simbad_incorrect_ids() -> None:
-    # main ID and object ID are both missing
-    with pytest.raises(
-        ValueError,
-        match=" ".join((
-            r"^Either object ID or main ID has to be provided,",
-            r"they cannot be missing both$"
+def test_get_stellar_parameter(
+    somethingThatDoesntExist: str
+) -> None:
+    # parameter of an object that does exist
+    val = simbad.getStellarParameter(
+        "PPM 725297",
+        "mesVar",
+        "period"
+    )
+    assert val
+    # parameter of an object that does not exist
+    val = simbad.getStellarParameter(
+        somethingThatDoesntExist,
+        "mesVar",
+        "period"
+    )
+    assert val is None, \
+        " ".join((
+            "There shouldn't be a known object",
+            f"under the name \"{somethingThatDoesntExist}\""
         ))
-    ):
-        val = tap.getStellarParameterFromSimbad(
-            None,
-            "mesVar",
-            "period"
-        )
-    # main ID and object ID are both provided
-    with pytest.raises(
-        ValueError,
-        match=" ".join((
-            r"^Either provide object ID or main ID but not both,",
-            r"it is not clear what needs to be done when",
-            r"both of them are provided$"
-        ))
-    ):
-        val = tap.getStellarParameterFromSimbad(
-            0,
-            "mesVar",
-            "period",
-            "some"
-        )

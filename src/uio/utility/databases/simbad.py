@@ -6,13 +6,13 @@ astronomical database.
 from astroquery.simbad import Simbad
 import re
 
-from typing import Optional
+from typing import Optional, Any
 
 from ..logs.log import logger
 from ..databases import tap
 
 
-def getOtherIDfromSimbad(
+def findIdentificatorFromAnotherCatalogue(
     starName: str,
     otherIDname: str,
     otherIDversion: Optional[str] = None,
@@ -35,8 +35,12 @@ def getOtherIDfromSimbad(
     ``` py
     from uio.utility.databases import simbad
 
-    otherID = simbad.getOtherIDfromSimbad("TWA 20", "gaia", "dr3")
-    #print(otherID)
+    otherID = simbad.findIdentificatorFromAnotherCatalogue(
+        "TWA 20",
+        "gaia",
+        "dr3"
+    )
+    print(otherID)
     ```
     """
     otherID = None
@@ -72,7 +76,7 @@ def getOtherIDfromSimbad(
     return otherID
 
 
-def findObjectID(starName: str) -> Optional[int]:
+def getObjectID(starName: str) -> Optional[int]:
     """
     Finds object identificator for
     [SIMBAD tables](http://simbad.cds.unistra.fr/simbad/tap/tapsearch.html).
@@ -88,8 +92,8 @@ def findObjectID(starName: str) -> Optional[int]:
     ``` py
     from uio.utility.databases import simbad
 
-    oid = simbad.findObjectID("A2 146")
-    #print(oid)
+    oid = simbad.getObjectID("A2 146")
+    print(oid)
     ```
     """
     oid: Optional[int] = None
@@ -109,7 +113,9 @@ def findObjectID(starName: str) -> Optional[int]:
             logger.debug(f"- {idValue}")
             serviceEndpoint = tap.getServiceEndpoint("simbad")
             if not serviceEndpoint:
-                raise ValueError("Couldn't get TAP service endpoint for SIMBAD")
+                raise ValueError(
+                    "Couldn't get TAP service endpoint for SIMBAD"
+                )
             rez = tap.queryService(
                 serviceEndpoint,
                 " ".join((
@@ -128,3 +134,41 @@ def findObjectID(starName: str) -> Optional[int]:
                 )
                 break
     return oid
+
+
+def getStellarParameter(
+    starName: str,
+    table: str,
+    param: str
+) -> Optional[Any]:
+    """
+    Query SIMBAD for a stellar parameter:
+
+    1. Find SIMBAD's object ID by the star name;
+    2. Query for a stellar parameter by that object ID.
+
+    Example:
+
+    ``` py
+    from uio.utility.databases import simbad
+
+    val = simbad.getStellarParameter(
+        "PPM 725297",
+        "mesVar",
+        "period"
+    )
+    print(val)
+    ```
+    """
+    val = None
+    oid = getObjectID(starName)
+    if oid:
+        # logger.debug(
+        #     f"Found the following object ID for [{starName}]: {oid}"
+        # )
+        val = tap.getStellarParameterFromSimbadByObjectID(
+            oid,
+            table,
+            param
+        )
+    return val

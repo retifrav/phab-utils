@@ -119,7 +119,7 @@ def getServiceEndpoint(tapServiceName: str) -> Optional[str]:
     tapServiceEndpoint = tap.getServiceEndpoint("padc")
     if tapServiceEndpoint is None:
         raise ValueError("No endpoint for such TAP service in the list")
-    #print(tapServiceEndpoint)
+    print(tapServiceEndpoint)
     ```
     """
     tapService = services.get(tapServiceName)
@@ -160,7 +160,7 @@ def queryService(
             "ORDER BY granule_uid"
         ))
     ).to_table().to_pandas()
-    #print(tbl)
+    print(tbl)
     ```
     """
     tapService = pyvo.dal.TAPService(tapEndpoint)
@@ -185,7 +185,7 @@ def getStellarParameterFromNASA(
     from uio.utility.databases import tap
 
     val = tap.getStellarParameterFromNASA("Kepler-11", "st_teff")
-    #print(val)
+    print(val)
     ```
     """
     serviceEndpoint = getServiceEndpoint("nasa")
@@ -222,7 +222,7 @@ def getPlanetaryParameterFromNASA(
     from uio.utility.databases import tap
 
     val = tap.getPlanetaryParameterFromNASA("Kepler-11 b", "pl_massj")
-    #print(val)
+    print(val)
     ```
     """
     serviceEndpoint = getServiceEndpoint("nasa")
@@ -266,7 +266,7 @@ def getParameterFromNASA(
     params = ["st_teff", "pl_massj"]
     for p in params:
         val = tap.getParameterFromNASA(systemName, planetName, p)
-        #print(val)
+        print(val)
     ```
     """
     result = None
@@ -297,8 +297,12 @@ def getParameterErrorsFromNASA(
     planetName = "Kepler-11 b"
     params = ["st_teff", "pl_massj"]
     for p in params:
-        errMin, errMax = tap.getParameterErrorsFromNASA(systemName, planetName, p)
-        #print(errMin, errMax)
+        errMin, errMax = tap.getParameterErrorsFromNASA(
+            systemName,
+            planetName,
+            p
+        )
+        print(errMin, errMax)
     ```
     """
     errMin = getParameterFromNASA(systemName, planetName, f"{param}err2")
@@ -319,7 +323,7 @@ def getParameterFromPADC(
     from uio.utility.databases import tap
 
     val = tap.getParameterFromPADC("Kepler-11 b", "mass")
-    #print(val)
+    print(val)
     ```
     """
     serviceEndpoint = getServiceEndpoint("padc")
@@ -355,7 +359,7 @@ def getParameterErrorsFromPADC(
     from uio.utility.databases import tap
 
     errMin, errMax = tap.getParameterErrorsFromPADC("Kepler-11 b", "mass")
-    #print(errMin, errMax)
+    print(errMin, errMax)
     ```
     """
     errMin = getParameterFromPADC(planetName, f"{param}_error_min")
@@ -363,96 +367,94 @@ def getParameterErrorsFromPADC(
     return errMin, errMax
 
 
-def getStellarParameterFromSimbad(
-    objectID: Optional[int],
+def getStellarParameterFromSimbadByMainID(
+    mainID: str,
     table: str,
     param: str,
-    mainID: Optional[str] = None
 ) -> Optional[Any]:
     """
-    Get the latest (*the newest*) published stellar parameter from SIMBAD.
+    Get the latest (*the newest*) published stellar parameter from SIMBAD
+    by using the main ID - star name that is chosen to be stored in `main_id`
+    field of the `basic` table.
 
-    Supports querying by main ID or by object ID. Main ID is the star name
-    that is chosen to be stored in `main_id` field of the `basic` table.
-    If main ID is not known, then first you will need to find the SIMBAD
-    object ID with `uio.utility.databases.simbad.findObjectID`.
-
-    Example when main ID is known:
+    Example:
 
     ``` py
     from uio.utility.databases import tap
 
-    val = tap.getStellarParameterFromSimbad(
-        None,
+    val = tap.getStellarParameterFromSimbadByMainID(
+        "CD-29 2360",
         "mesVar",
-        "period",
-        "CD-29 2360"
+        "period"
     )
-    #print(val)
+    print(val)
     ```
+    """
+    serviceEndpoint = getServiceEndpoint("simbad")
+    if not serviceEndpoint:
+        raise ValueError("Couldn't get TAP service endpoint for SIMBAD")
 
-    Example without knowning the main ID:
+    results = queryService(
+        serviceEndpoint,
+        " ".join((
+            f"SELECT TOP 1 {param}",
+            f"FROM {table} AS v",
+            "JOIN basic AS b ON v.oidref = b.oid",
+            f"WHERE b.main_id = '{mainID}' AND {param} IS NOT NULL",
+            "ORDER BY bibcode DESC"
+        ))
+    )
+    if results:
+        val = results[0].get(param)
+        return val
+    else:
+        return None
+
+
+def getStellarParameterFromSimbadByObjectID(
+    objectID: int,
+    table: str,
+    param: str
+) -> Optional[Any]:
+    """
+    Get the latest (*the newest*) published stellar parameter from SIMBAD
+    by using the SIMBAD's object ID.
+
+    If you only have the star bane, then first you will need to find
+    the object ID with `uio.utility.databases.simbad.getObjectID`.
+
+    Example:
 
     ``` py
     from uio.utility.databases import simbad
     from uio.utility.databases import tap
 
     val = None
-    oid = simbad.findObjectID("PPM 725297")
+    oid = simbad.getObjectID("PPM 725297")
     if not oid:
         print("Could not find SIMBAD object ID")
     else:
-        val = tap.getStellarParameterFromSimbad(
+        val = tap.getStellarParameterFromSimbadByObjectID(
             oid,
             "mesVar",
             "period"
         )
-    #print(val)
+    print(val)
     ```
     """
-    if objectID is None and mainID is None:
-        raise ValueError(
-            " ".join((
-                "Either object ID or main ID has to be provided,",
-                "they cannot be missing both"
-            ))
-        )
-
-    if objectID is not None and mainID is not None:
-        raise ValueError(
-            " ".join((
-                "Either provide object ID or main ID but not both,",
-                "it is not clear what needs to be done",
-                "when both of them are provided"
-            ))
-        )
-
     serviceEndpoint = getServiceEndpoint("simbad")
     if not serviceEndpoint:
         raise ValueError("Couldn't get TAP service endpoint for SIMBAD")
 
-    results = None
-    if objectID:  # query by object ID
-        results = queryService(
-            serviceEndpoint,
-            " ".join((
-                f"SELECT TOP 1 {param}",
-                f"FROM {table}",
-                f"WHERE oidref = {objectID} AND {param} IS NOT NULL",
-                "ORDER BY bibcode DESC"
-            ))
-        )
-    else:  # query by main ID
-        results = queryService(
-            serviceEndpoint,
-            " ".join((
-                f"SELECT TOP 1 {param}",
-                f"FROM {table} AS v",
-                "JOIN basic AS b ON v.oidref = b.oid",
-                f"WHERE b.main_id = '{mainID}' AND {param} IS NOT NULL",
-                "ORDER BY bibcode DESC"
-            ))
-        )
+    results = queryService(
+        serviceEndpoint,
+        " ".join((
+            f"SELECT TOP 1 {param}",
+            f"FROM {table}",
+            f"WHERE oidref = {objectID} AND {param} IS NOT NULL",
+            "ORDER BY bibcode DESC"
+        ))
+    )
     if results:
         val = results[0].get(param)
         return val

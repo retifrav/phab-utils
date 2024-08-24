@@ -60,7 +60,7 @@ def lookForParametersInGaia(
     ```
 
     You might need to provide `simbadIDversion` parameter (*the `dr3` value
-    here*) if SIMBAD (`uio.utility.databases.simbad.getOtherIDfromSimbad`)
+    here*) if SIMBAD (`uio.utility.databases.simbad.findIdentificatorFromAnotherCatalogue`)
     returns IDs like `DR3 2135237601028549888` and you need to get exactly
     the DR3 ones.
 
@@ -74,7 +74,7 @@ def lookForParametersInGaia(
 
     stars: Dict[str, Optional[str]] = {}
     for star in starNames:
-        oid = simbad.getOtherIDfromSimbad(star, "gaia", simbadIDversion)
+        oid = simbad.findIdentificatorFromAnotherCatalogue(star, "gaia", simbadIDversion)
         if oid is None:
             print(f"- [WARNING] did not GAIA ID for [{star}]")
         else:
