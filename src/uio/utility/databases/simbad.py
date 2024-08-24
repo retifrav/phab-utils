@@ -98,36 +98,67 @@ def getObjectID(starName: str) -> Optional[int]:
     """
     oid: Optional[int] = None
 
-    ids = Simbad.query_objectids(starName)
-    if ids is None:
-        logger.warning(
+    # check if this name is already the main ID
+    logger.debug(f"Checking whether [{starName}] is already the main ID")
+    rez = tap.queryService(
+        tap.getServiceEndpoint("simbad"),
+        " ".join((
+            "SELECT oid",
+            "FROM basic",
+            f"WHERE main_id = '{starName}'"
+        ))
+    )
+    if rez:
+        logger.debug(
             " ".join((
-                "SIMBAD database doesn't have information",
-                f"about [{starName}]"
+                f"- yes, that is already the main ID,",
+                "no need to iterate all the identificators.",
+                f"SIMBAD object ID is: {oid}"
             ))
         )
+        oid = rez[0]["oid"]
     else:
-        logger.debug(f"Checking SIMBAD IDs for [{starName}]:")
-        for id in ids:
-            idValue = id["ID"]
-            logger.debug(f"- {idValue}")
-            rez = tap.queryService(
-                tap.getServiceEndpoint("simbad"),
+        logger.debug(
+            " ".join((
+                "- no, that is not the main ID, will have to iterate",
+                "all the other identificators"
+            ))
+        )
+        ids = Simbad.query_objectids(starName)
+        if ids is None:
+            logger.warning(
                 " ".join((
-                    "SELECT oid",
-                    "FROM basic",
-                    f"WHERE main_id = '{idValue}'"
+                    "SIMBAD database doesn't have information",
+                    f"about [{starName}]"
                 ))
             )
-            if rez:
-                oid = rez[0]["oid"]
-                logger.debug(
+        else:
+            logger.debug(f"Checking SIMBAD IDs for [{starName}]:")
+            for id in ids:
+                idValue = id["ID"]
+                logger.debug(f"- {idValue}")
+                if idValue == starName:
+                    logger.debug(
+                        f"...the [{idValue}] has already been tested, skipping"
+                    )
+                    continue
+                rez = tap.queryService(
+                    tap.getServiceEndpoint("simbad"),
                     " ".join((
-                        f"The [{idValue}] is the main ID for [{starName}],",
-                        f"SIMBAD object ID is: {oid}"
+                        "SELECT oid",
+                        "FROM basic",
+                        f"WHERE main_id = '{idValue}'"
                     ))
                 )
-                break
+                if rez:
+                    logger.debug(
+                        " ".join((
+                            f"The [{idValue}] is the main ID for [{starName}],",
+                            f"SIMBAD object ID is: {oid}"
+                        ))
+                    )
+                    oid = rez[0]["oid"]
+                    break
     return oid
 
 
