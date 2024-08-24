@@ -360,7 +360,7 @@ def getStellarParameterFromSimbadByMainID(
     mainID: str,
     table: str,
     param: str,
-) -> Optional[Any]:
+) -> Optional[tuple[Any, str]]:
     """
     Get the latest (*the newest*) published stellar parameter from SIMBAD
     by using the main ID - star name that is chosen to be stored in `main_id`
@@ -371,18 +371,18 @@ def getStellarParameterFromSimbadByMainID(
     ``` py
     from uio.utility.databases import tap
 
-    val = tap.getStellarParameterFromSimbadByMainID(
+    val, ref = tap.getStellarParameterFromSimbadByMainID(
         "CD-29 2360",
         "mesVar",
         "period"
     )
-    print(val)
+    print(f"Value: {val}, reference: {ref}")
     ```
     """
     results = queryService(
         getServiceEndpoint("simbad"),
         " ".join((
-            f"SELECT TOP 1 {param}",
+            f"SELECT TOP 1 v.{param}, v.bibcode",
             f"FROM {table} AS v",
             "JOIN basic AS b ON v.oidref = b.oid",
             f"WHERE b.main_id = '{mainID}' AND {param} IS NOT NULL",
@@ -390,8 +390,10 @@ def getStellarParameterFromSimbadByMainID(
         ))
     )
     if results:
-        val = results[0].get(param)
-        return val
+        return (
+            results[0].get(param),
+            results[0].get("bibcode")
+        )
     else:
         return None
 
@@ -400,7 +402,7 @@ def getStellarParameterFromSimbadByObjectID(
     objectID: int,
     table: str,
     param: str
-) -> Optional[Any]:
+) -> Optional[tuple[Any, str]]:
     """
     Get the latest (*the newest*) published stellar parameter from SIMBAD
     by using the SIMBAD's object ID.
@@ -414,17 +416,16 @@ def getStellarParameterFromSimbadByObjectID(
     from uio.utility.databases import simbad
     from uio.utility.databases import tap
 
-    val = None
     oid = simbad.getObjectID("PPM 725297")
     if not oid:
         print("Could not find SIMBAD object ID")
     else:
-        val = tap.getStellarParameterFromSimbadByObjectID(
+        val, ref = tap.getStellarParameterFromSimbadByObjectID(
             oid,
             "mesVar",
             "period"
         )
-    print(val)
+        print(f"Value: {val}, reference: {ref}")
     ```
 
     There is also a convenience function `uio.utility.databases.simbad.getStellarParameter`.
@@ -432,14 +433,16 @@ def getStellarParameterFromSimbadByObjectID(
     results = queryService(
         getServiceEndpoint("simbad"),
         " ".join((
-            f"SELECT TOP 1 {param}",
+            f"SELECT TOP 1 {param}, bibcode",
             f"FROM {table}",
             f"WHERE oidref = {objectID} AND {param} IS NOT NULL",
             "ORDER BY bibcode DESC"
         ))
     )
     if results:
-        val = results[0].get(param)
-        return val
+        return (
+            results[0].get(param),
+            results[0].get("bibcode")
+        )
     else:
         return None

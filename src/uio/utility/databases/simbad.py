@@ -166,7 +166,7 @@ def getStellarParameter(
     starName: str,
     table: str,
     param: str
-) -> Optional[Any]:
+) -> Optional[tuple[Any, str]]:
     """
     A convenience function for querying SIMBAD for a stellar parameter:
 
@@ -178,23 +178,25 @@ def getStellarParameter(
     ``` py
     from uio.utility.databases import simbad
 
-    val = simbad.getStellarParameter(
+    val, ref = simbad.getStellarParameter(
         "PPM 725297",
         "mesVar",
         "period"
     )
-    print(val)
+    print(f"Value: {val}, reference: {ref}")
     ```
     """
-    val = None
+    rez: Optional[tuple[Any, str]] = None
+
     oid = getObjectID(starName)
     if oid:
         # logger.debug(
         #     f"Found the following object ID for [{starName}]: {oid}"
         # )
-        val = tap.getStellarParameterFromSimbadByObjectID(
+        rez = tap.getStellarParameterFromSimbadByObjectID(
             oid,
             table,
             param
         )
-    return val
+
+    return rez

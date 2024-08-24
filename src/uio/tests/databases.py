@@ -89,19 +89,21 @@ def test_get_stellar_parameter_from_simbad_by_main_id(
     somethingThatDoesntExist: str
 ) -> None:
     # parameter of an object that does exist
-    val = tap.getStellarParameterFromSimbadByMainID(
+    rez = tap.getStellarParameterFromSimbadByMainID(
         "CD-29 2360",
         "mesVar",
         "period"
     )
-    assert val
+    assert rez
+    assert len(rez) == 2
+    assert isinstance(rez[1], str)
     # parameter of an object that does not exist
-    val = tap.getStellarParameterFromSimbadByMainID(
+    rez = tap.getStellarParameterFromSimbadByMainID(
         somethingThatDoesntExist,
         "mesVar",
         "period",
     )
-    assert val is None, \
+    assert rez is None, \
         " ".join((
             "There shouldn't be a known object",
             f"under the name \"{somethingThatDoesntExist}\""
@@ -110,20 +112,22 @@ def test_get_stellar_parameter_from_simbad_by_main_id(
 
 def test_get_stellar_parameter_from_simbad_by_object_id() -> None:
     # parameter of an object that does exist
-    val = tap.getStellarParameterFromSimbadByObjectID(
+    rez = tap.getStellarParameterFromSimbadByObjectID(
         817576,
         "mesVar",
         "period"
     )
-    assert val
+    assert rez
+    assert len(rez) == 2
+    assert isinstance(rez[1], str)
     # parameter of an object that does not exist
     oidThatDoesNotExist = 123454321
-    val = tap.getStellarParameterFromSimbadByObjectID(
+    rez = tap.getStellarParameterFromSimbadByObjectID(
         oidThatDoesNotExist,
         "mesVar",
         "period"
     )
-    assert val is None, \
+    assert rez is None, \
         " ".join((
             "There shouldn't be a known object",
             f"with the object ID \"{oidThatDoesNotExist}\""
@@ -134,19 +138,21 @@ def test_get_stellar_parameter(
     somethingThatDoesntExist: str
 ) -> None:
     # parameter of an object that does exist
-    val = simbad.getStellarParameter(
+    rez = simbad.getStellarParameter(
         "PPM 725297",
         "mesVar",
         "period"
     )
-    assert val
+    assert rez
+    assert len(rez) == 2
+    assert isinstance(rez[1], str)
     # parameter of an object that does not exist
-    val = simbad.getStellarParameter(
+    rez = simbad.getStellarParameter(
         somethingThatDoesntExist,
         "mesVar",
         "period"
     )
-    assert val is None, \
+    assert rez is None, \
         " ".join((
             "There shouldn't be a known object",
             f"under the name \"{somethingThatDoesntExist}\""
