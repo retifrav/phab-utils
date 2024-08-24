@@ -88,15 +88,12 @@ def lookForParametersInGaia(
     for parameter in adqlParameters:
         originalTable[parameter] = numpy.array(numpy.NaN, dtype=float)
 
-    tapService = tap.getServiceEndpoint("gaia")
-    if tapService is None:
-        raise ValueError("No endpoint for such TAP service in the list")
     foundCnt = 0
     for star in stars:
         gaiaID = stars[star]
         print(f"- {star} | {gaiaID}...")
         resultsGAIA = tap.queryService(
-            tapService,
+            tap.getServiceEndpoint("gaia"),
             " ".join((
                 f"SELECT {', '.join(adqlParameters)}",
                 f"FROM {adqlTable}",

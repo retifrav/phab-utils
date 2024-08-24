@@ -107,9 +107,9 @@ Mapping tables columns between different databases.
 """
 
 
-def getServiceEndpoint(tapServiceName: str) -> Optional[str]:
+def getServiceEndpoint(tapServiceName: str) -> str:
     """
-    Find TAP endpoint by service/database name.
+    Get TAP service endpoint by the service/database name.
 
     Example:
 
@@ -117,8 +117,6 @@ def getServiceEndpoint(tapServiceName: str) -> Optional[str]:
     from uio.utility.databases import tap
 
     tapServiceEndpoint = tap.getServiceEndpoint("padc")
-    if tapServiceEndpoint is None:
-        raise ValueError("No endpoint for such TAP service in the list")
     print(tapServiceEndpoint)
     ```
     """
@@ -128,13 +126,13 @@ def getServiceEndpoint(tapServiceName: str) -> Optional[str]:
         if tapServiceEndpoint:
             return tapServiceEndpoint
         else:
-            f"[ERROR] {tapServiceName} has no registered endpoint"
-            return None
+            raise ValueError(
+                f"The [{tapServiceName}] service has no registered endpoint"
+            )
     else:
-        logger.error(
-            f"There is no TAP service under the name {tapServiceName}"
+        raise ValueError(
+            f"There is no TAP service under the name [{tapServiceName}]"
         )
-        return None
 
 
 def queryService(
@@ -152,7 +150,7 @@ def queryService(
     from uio.utility.databases import tap
 
     tbl = tap.queryService(
-        tap.getServiceEndpoint("padc"),  # "http://voparis-tap-planeto.obspm.fr/tap"
+        tap.getServiceEndpoint("padc"),
         " ".join((
             "SELECT star_name, granule_uid, mass, radius, period, semi_major_axis",
             "FROM exoplanet.epn_core",
@@ -188,11 +186,8 @@ def getStellarParameterFromNASA(
     print(val)
     ```
     """
-    serviceEndpoint = getServiceEndpoint("nasa")
-    if not serviceEndpoint:
-        raise ValueError("Couldn't get TAP service endpoint for NASA")
     results = queryService(
-        serviceEndpoint,
+        getServiceEndpoint("nasa"),
         " ".join((
             f"SELECT {param}",  # TOP is broken in NASA: https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/#top-clause-is-broken
             f"FROM ps",
@@ -225,11 +220,8 @@ def getPlanetaryParameterFromNASA(
     print(val)
     ```
     """
-    serviceEndpoint = getServiceEndpoint("nasa")
-    if not serviceEndpoint:
-        raise ValueError("Couldn't get TAP service endpoint for NASA")
     results = queryService(
-        serviceEndpoint,
+        getServiceEndpoint("nasa"),
         " ".join((
             f"SELECT {param}",  # TOP is broken in NASA: https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/#top-clause-is-broken
             f"FROM ps",
@@ -326,11 +318,8 @@ def getParameterFromPADC(
     print(val)
     ```
     """
-    serviceEndpoint = getServiceEndpoint("padc")
-    if not serviceEndpoint:
-        raise ValueError("Couldn't get TAP service endpoint for PADC")
     results = queryService(
-        serviceEndpoint,
+        getServiceEndpoint("padc"),
         " ".join((
             f"SELECT {param}",
             f"FROM exoplanet.epn_core",
@@ -390,12 +379,8 @@ def getStellarParameterFromSimbadByMainID(
     print(val)
     ```
     """
-    serviceEndpoint = getServiceEndpoint("simbad")
-    if not serviceEndpoint:
-        raise ValueError("Couldn't get TAP service endpoint for SIMBAD")
-
     results = queryService(
-        serviceEndpoint,
+        getServiceEndpoint("simbad"),
         " ".join((
             f"SELECT TOP 1 {param}",
             f"FROM {table} AS v",
@@ -442,12 +427,8 @@ def getStellarParameterFromSimbadByObjectID(
     print(val)
     ```
     """
-    serviceEndpoint = getServiceEndpoint("simbad")
-    if not serviceEndpoint:
-        raise ValueError("Couldn't get TAP service endpoint for SIMBAD")
-
     results = queryService(
-        serviceEndpoint,
+        getServiceEndpoint("simbad"),
         " ".join((
             f"SELECT TOP 1 {param}",
             f"FROM {table}",

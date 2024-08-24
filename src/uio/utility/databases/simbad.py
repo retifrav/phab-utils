@@ -111,13 +111,8 @@ def getObjectID(starName: str) -> Optional[int]:
         for id in ids:
             idValue = id["ID"]
             logger.debug(f"- {idValue}")
-            serviceEndpoint = tap.getServiceEndpoint("simbad")
-            if not serviceEndpoint:
-                raise ValueError(
-                    "Couldn't get TAP service endpoint for SIMBAD"
-                )
             rez = tap.queryService(
-                serviceEndpoint,
+                tap.getServiceEndpoint("simbad"),
                 " ".join((
                     "SELECT oid",
                     "FROM basic",

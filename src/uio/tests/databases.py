@@ -13,11 +13,7 @@ def tapService() -> Tuple[str, str]:
 
 def test_known_tap_service(tapService: Tuple[str, str]) -> None:
     tapServiceEndpoint = tap.getServiceEndpoint(tapService[0])
-    assert tapServiceEndpoint is not None, \
-        " ".join((
-            "There is no TAP service registered",
-            f"under the name \"{tapService[0]}\""
-        ))
+    assert tapServiceEndpoint
     assert tapServiceEndpoint == tapService[1], \
         " ".join((
             f"The \"{tapService[0]}\" TAP service",
@@ -26,12 +22,11 @@ def test_known_tap_service(tapService: Tuple[str, str]) -> None:
 
 
 def test_unknown_tap_service(somethingThatDoesntExist: str) -> None:
-    tapServiceEndpoint = tap.getServiceEndpoint(somethingThatDoesntExist)
-    assert tapServiceEndpoint is None, \
-        " ".join((
-            "There shouldn't be a registered TAP service",
-            f"under the name \"{somethingThatDoesntExist}\""
-        ))
+    with pytest.raises(
+        ValueError,
+        match=r"^There is no TAP service under the name.*$"
+    ):
+        tapServiceEndpoint = tap.getServiceEndpoint(somethingThatDoesntExist)
 
 
 def test_getting_stellar_parameter_from_nasa() -> None:
