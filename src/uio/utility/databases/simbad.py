@@ -109,6 +109,7 @@ def getObjectID(starName: str) -> Optional[int]:
         ))
     )
     if rez:
+        oid = rez[0]["oid"]
         logger.debug(
             " ".join((
                 f"- yes, that is already the main ID,",
@@ -116,7 +117,6 @@ def getObjectID(starName: str) -> Optional[int]:
                 f"SIMBAD object ID is: {oid}"
             ))
         )
-        oid = rez[0]["oid"]
     else:
         logger.debug(
             " ".join((
@@ -151,13 +151,13 @@ def getObjectID(starName: str) -> Optional[int]:
                     ))
                 )
                 if rez:
+                    oid = rez[0]["oid"]
                     logger.debug(
                         " ".join((
                             f"The [{idValue}] is the main ID for [{starName}],",
                             f"SIMBAD object ID is: {oid}"
                         ))
                     )
-                    oid = rez[0]["oid"]
                     break
     return oid
 
