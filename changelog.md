@@ -2,6 +2,7 @@
 
 <!-- MarkdownTOC -->
 
+- [0.5.1](#051)
 - [0.5.0](#050)
 - [0.4.0](#040)
 - [0.3.2](#032)
@@ -11,6 +12,20 @@
 - [0.1.0](#010)
 
 <!-- /MarkdownTOC -->
+
+## 0.5.1
+
+Released on `2024-08-24`.
+
+- `databases`
+    + `simbad`
+        * renamed `findObjectID()` to `getObjectID()`
+            - checking for the main ID before iterating all the identificators
+        * renamed `getOtherIDfromSimbad()` to `findIdentificatorFromAnotherCatalogue()`
+        * `getStellarParameterFromSimbad()` - wraps `getObjectID()` and `getStellarParameterFromSimbadByObjectID()` into a single convenience function
+    + `tap`
+        * split `getStellarParameterFromSimbad()` into `getStellarParameterFromSimbadByMainID()` and `getStellarParameterFromSimbadByObjectID()`
+        * `getServiceEndpoint()` now raises a `ValueError` exception instead of returning `None`
 
 ## 0.5.0
 

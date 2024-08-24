@@ -6,8 +6,8 @@ import os
 
 debugMode: bool = False
 """
-Flag for enabling debug log. If set to `True`, then debug logging format
-will be enabled, and more details will be printed to the log.
+Flag for enabling debug log. When it is set to `True`, the logging format
+is extended, and the level of details being printed out is increased.
 """
 
 if "UIO_EXOPLANET_GROUP_DEBUG" in os.environ:

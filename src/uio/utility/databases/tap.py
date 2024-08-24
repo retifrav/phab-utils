@@ -405,7 +405,7 @@ def getStellarParameterFromSimbadByObjectID(
     Get the latest (*the newest*) published stellar parameter from SIMBAD
     by using the SIMBAD's object ID.
 
-    If you only have the star bane, then first you will need to find
+    If you only have the star name, then first you will need to find
     the object ID with `uio.utility.databases.simbad.getObjectID`.
 
     Example:
@@ -426,6 +426,8 @@ def getStellarParameterFromSimbadByObjectID(
         )
     print(val)
     ```
+
+    There is also a convenience function `uio.utility.databases.simbad.getStellarParameter`.
     """
     results = queryService(
         getServiceEndpoint("simbad"),

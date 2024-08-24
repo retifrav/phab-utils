@@ -12,4 +12,4 @@ or:
 $ UIO_EXOPLANET_GROUP_DEBUG=1 python ./some.py
 ```
 
-Doing so will set the `uio.utility.logs.debugMode` flag to `True`.
+That will set the `uio.utility.logs.debugMode` flag to `True`.

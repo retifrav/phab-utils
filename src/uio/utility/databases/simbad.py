@@ -168,10 +168,10 @@ def getStellarParameter(
     param: str
 ) -> Optional[Any]:
     """
-    Query SIMBAD for a stellar parameter:
+    A convenience function for querying SIMBAD for a stellar parameter:
 
-    1. Find SIMBAD's object ID by the star name;
-    2. Query for a stellar parameter by that object ID.
+    1. Finds SIMBAD's object ID by the star name (*with `uio.utility.databases.simbad.getObjectID`*);
+    2. Queries for a stellar parameter by that object ID (*with `uio.utility.databases.tap.getStellarParameterFromSimbadByObjectID`*).
 
     Example:
 
