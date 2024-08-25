@@ -178,12 +178,19 @@ def getStellarParameter(
     ``` py
     from uio.utility.databases import simbad
 
-    val, ref = simbad.getStellarParameter(
-        "PPM 725297",
+    starName = "PPM 725297"
+    param = "period"
+    rez = simbad.getStellarParameter(
+        starName,
         "mesVar",
-        "period"
+        param
     )
-    print(f"Value: {val}, reference: {ref}")
+    if rez:
+        val = rez[0]
+        ref = rez[1]
+        print(f"Value: {val}, reference: {ref}")
+    else:
+        print(f"SIMBAD doesn't have data about [{param}] parameter of [{starName}] object")
     ```
     """
     rez: Optional[tuple[Any, str]] = None
