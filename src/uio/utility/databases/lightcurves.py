@@ -3,9 +3,12 @@ Getting light curves data.
 """
 
 import lightkurve
+import pandas
 import re
 
 from typing import Optional, Dict, List, Pattern
+
+from ..logs.log import logger
 
 # apparently, one cannot set long/short threshold,
 # hence this dictionary
@@ -19,8 +22,8 @@ authors: Dict[str, Dict] = {
         "mission": "Kepler",
         "cadence":
         {
-            "long": 1800,
-            "short": 60
+            "long": [1800],
+            "short": [60]
         }
     },
     "K2":
@@ -28,8 +31,8 @@ authors: Dict[str, Dict] = {
         "mission": "K2",
         "cadence":
         {
-            "long": 1800,
-            "short": 60
+            "long": [1800],
+            "short": [60]
         }
     },
     "SPOC":
@@ -37,9 +40,9 @@ authors: Dict[str, Dict] = {
         "mission": "TESS",
         "cadence":
         {
-            "long": 600,
-            "short": 120,
-            "fast": 20
+            "long": [600],
+            "short": [120],
+            "fast": [20]
         }
     },
     "TESS-SPOC":
@@ -47,7 +50,7 @@ authors: Dict[str, Dict] = {
         "mission": "TESS",
         "cadence":
         {
-            "long": 600
+            "long": []  # any cadence is long
         }
     }
 }
@@ -90,7 +93,7 @@ def getLightCurveStats(
     stats = lightcurves.getLightCurveStats("Kepler-114")
     if not stats:
         raise ValueError("Didn't find any results for this star")
-    #print(stats)
+    print(stats)
     ```
     """
     stats: Dict[str, Dict] = {}
@@ -100,8 +103,10 @@ def getLightCurveStats(
         author=tuple(authors.keys())
     )
     if len(lghtcrvs) != 0:
-        tbl = lghtcrvs.table.to_pandas()[["author", "exptime", "mission"]]
-        # print(tbl)
+        tbl: pandas.DataFrame = lghtcrvs.table.to_pandas()[
+            ["author", "exptime", "mission"]
+        ]
+        logger.debug(tbl)
 
         for author, group in (tbl.groupby("author")):
             if author not in authors:
@@ -112,9 +117,15 @@ def getLightCurveStats(
             for cadence in ["long", "short", "fast"]:
                 if cadence in authors[author]["cadence"]:
                     stats[mission][cadence] = {}
-                    cadenceValue = authors[author]["cadence"][cadence]
-                    # perhaps both of these should be normalized to int first
-                    cadences = group.query("exptime == @cadenceValue")
+                    cadenceValues: List[int] = (
+                        authors[author]["cadence"][cadence]
+                    )
+                    cadences: pandas.DataFrame = None
+                    if len(cadenceValues) > 0:  # take only specified values
+                        # perhaps both of these should be normalized to int
+                        cadences = group.query("exptime == @cadenceValues")
+                    else:  # any value is good
+                        cadences = group
 
                     # total count
                     stats[mission][cadence]["total"] = len(cadences)

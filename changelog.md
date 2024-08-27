@@ -19,6 +19,8 @@
 Released on `?`.
 
 - `databases`
+    + `lightcurves`
+        * `getLightCurveStats` - cadence can have more than one value (*up to any value being suitable*)
     + `simbad` and `tap` - querying for a parameter in SIMBAD also returns its bibliographic code, so now the return type for the following functions is `tuple[Any, str]`:
         * `getStellarParameter()`
         * `getStellarParameterFromSimbadByMainID()`
