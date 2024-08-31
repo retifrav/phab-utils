@@ -2,7 +2,7 @@
 
 <!-- MarkdownTOC -->
 
-- [?](#)
+- [0.6.0](#060)
 - [0.5.1](#051)
 - [0.5.0](#050)
 - [0.4.0](#040)
@@ -14,13 +14,15 @@
 
 <!-- /MarkdownTOC -->
 
-## ?
+## 0.6.0
 
-Released on `?`.
+Released on `2024-08-31`.
 
 - `databases`
     + `lightcurves`
-        * `getLightCurveStats` - cadence can have more than one value (*up to any value being suitable*)
+        * `getLightCurveStats`
+            - cadence can have more than one value, so it now accepts a list instead of just one value (*and an empty list would mean that any value is good*)
+            - detailed results format has changed, now it also includes the cadence value per sector
     + `simbad` and `tap` - querying for a parameter in SIMBAD also returns its bibliographic code, so now the return type for the following functions is `tuple[Any, str]`:
         * `getStellarParameter()`
         * `getStellarParameterFromSimbadByMainID()`
