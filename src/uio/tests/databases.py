@@ -77,12 +77,13 @@ def test_get_object_id(somethingThatDoesntExist: str) -> None:
     objectID = simbad.getObjectID("A2 146")
     assert objectID == 3308165
     # an object that does not exist
-    objectID = simbad.getObjectID(f"A2 146 {somethingThatDoesntExist}")
-    assert objectID is None, \
-        " ".join((
-            "There shouldn't be a known object that would contain",
-            f"\"{somethingThatDoesntExist}\" as a part of its name"
-        ))
+    with pytest.warns(Warning):  # should be BlankResponseWarning
+        objectID = simbad.getObjectID(f"A2 146 {somethingThatDoesntExist}")
+        assert objectID is None, \
+            " ".join((
+                "There shouldn't be a known object that would contain",
+                f"\"{somethingThatDoesntExist}\" as a part of its name"
+            ))
 
 
 def test_get_stellar_parameter_from_simbad_by_main_id(
@@ -147,13 +148,14 @@ def test_get_stellar_parameter(
     assert len(rez) == 2
     assert isinstance(rez[1], str)
     # parameter of an object that does not exist
-    rez = simbad.getStellarParameter(
-        somethingThatDoesntExist,
-        "mesVar",
-        "period"
-    )
-    assert rez is None, \
-        " ".join((
-            "There shouldn't be a known object",
-            f"under the name \"{somethingThatDoesntExist}\""
-        ))
+    with pytest.warns(Warning):  # should be BlankResponseWarning
+        rez = simbad.getStellarParameter(
+            somethingThatDoesntExist,
+            "mesVar",
+            "period"
+        )
+        assert rez is None, \
+            " ".join((
+                "There shouldn't be a known object",
+                f"under the name \"{somethingThatDoesntExist}\""
+            ))
