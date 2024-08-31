@@ -134,6 +134,9 @@ def getLightCurveStats(
                         # count by sectors
                         stats[mission][cadence]["by-sectors"] = {}
                         for m in cadences["mission"]:
+                            # logger.debug(cadences.query("mission == @m")[
+                            #     "exptime"
+                            # ].values)
                             sectorMatch = re.search(
                                 missionSectorRegExes[mission],
                                 m
@@ -146,14 +149,27 @@ def getLightCurveStats(
                                     ))
                                 )
                             sector = sectorMatch.group(1)
+                            if not stats[mission][cadence]["by-sectors"].get(
+                                sector
+                            ):  # this sector hasn't been added yet
+                                stats[mission][cadence]["by-sectors"][
+                                    sector
+                                ] = {}
+                                # save the cadence/exptime too (assuming
+                                # that it is the same for every sector entry)
+                                stats[mission][cadence]["by-sectors"][sector][
+                                    "exptime"
+                                ] = cadences.query("mission == @m")[
+                                    "exptime"
+                                ].values[0]  # there must be a better way
                             try:
                                 stats[mission][cadence][
                                     "by-sectors"
-                                ][sector] += 1
+                                ][sector]["count"] += 1
                             except KeyError:
                                 stats[mission][cadence][
                                     "by-sectors"
-                                ][sector] = 1
+                                ][sector]["count"] = 1
     return stats
 
 
