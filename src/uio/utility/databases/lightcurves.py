@@ -92,8 +92,51 @@ def getLightCurveStats(
 
     stats = lightcurves.getLightCurveStats("Kepler-114")
     if not stats:
-        raise ValueError("Didn't find any results for this star")
-    print(stats)
+        print("Didn't find any results for this star")
+    else:
+        authorName = "Kepler"
+        cadenceType = "long"
+        sectors = stats.get(
+            authorName,
+            {}
+        ).get(cadenceType)
+        if sectors is None:
+            print(
+                " ".join((
+                    "There doesn't seem to be any sectors",
+                    f"with [{cadenceType}] cadence by [{authorName}]"
+                ))
+            )
+        else:
+            totalProperty = "total"
+            sectorsCount = sectors.get(totalProperty)
+            if sectorsCount is None:
+                print(
+                    " ".join((
+                        f"For some reason, the [{totalProperty}] property",
+                        f"is missing from the [{cadenceType}] cadence",
+                        f"collection by [{authorName}]"
+                    ))
+                )
+            else:
+                print(
+                    " ".join((
+                        f"Total amount of sectors with [{cadenceType}]",
+                        f"cadence by [{authorName}]: {sectorsCount}",
+                    ))
+                )
+                bySectors = sectors.get("by-sectors")
+                if bySectors is None:
+                    print(
+                        " ".join((
+                            "For some reason, the [total] property is missing",
+                            f"from the [{cadenceType}] cadence collection",
+                            f"by [{authorName}]"
+                        ))
+                    )
+                else:
+                    for s in bySectors:
+                        print(f"- {s}: {bySectors[s]}")
     ```
     """
     stats: Dict[str, Dict] = {}
