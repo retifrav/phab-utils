@@ -11,6 +11,7 @@ via [TAP](https://ivoa.net/documents/TAP/) interface.
 # ]
 
 import pyvo
+import re
 
 from typing import Optional, Dict, List, Tuple, Any
 
@@ -135,9 +136,38 @@ def getServiceEndpoint(tapServiceName: str) -> str:
         )
 
 
+def escapeSpecialCharactersForAdql(rawQuery: str) -> str:
+    """
+    Escape certain special characters in ADQL query. For now only escapes
+    a single quote character.
+
+    Example:
+
+    ``` py
+    from uio.utility.databases import tap
+
+    rawQuery = " ".join((
+        "SELECT oid FROM basic",
+        "WHERE main_id = 'NAME Teegarden's Star'",
+        "AND main_id != 'someone else's star'"
+    ))
+    print(rawQuery)
+    escapedQuery = tap.escapeSpecialCharactersForAdql(rawQuery)
+    print(escapedQuery)
+    ```
+    """
+    escapedQuery: str = re.sub(
+        r"('([^']*)(')([^']*)')",
+        r"'\g<2>'\g<3>\g<4>'",
+        rawQuery
+    )
+    return escapedQuery
+
+
 def queryService(
     tapEndpoint: str,
-    adqlQuery: str
+    adqlQuery: str,
+    tryToReExecuteOnFailure: bool = True
 ) -> Optional[pyvo.dal.tap.TAPResults]:
     """
     Send [ADQL](https://ivoa.net/documents/ADQL/) request to the TAP service
@@ -157,13 +187,34 @@ def queryService(
             "WHERE star_name = 'Kepler-107'",
             "ORDER BY granule_uid"
         ))
-    ).to_table().to_pandas()
-    print(tbl)
+    )
+    if tbl:
+        print(tbl.to_table().to_pandas())
+    else:
+        print("No results")
     ```
     """
     tapService = pyvo.dal.TAPService(tapEndpoint)
-    results = tapService.search(adqlQuery)
-    if len(results):
+    logger.debug(f"ADQL query to execute: {adqlQuery}")
+    results = None
+    try:
+        results = tapService.search(adqlQuery)
+    except pyvo.dal.exceptions.DALQueryError as ex:
+        if tryToReExecuteOnFailure:
+            logger.warning(
+                " ".join((
+                    "The query failed, will try to execute again,",
+                    "but this time with escaped characters. Original",
+                    f"error message: {ex}"
+                ))
+            )
+            results = tapService.search(
+                escapeSpecialCharactersForAdql(adqlQuery)
+            )
+        else:
+            raise
+    if results is not None and len(results) > 0:
+        logger.debug(f"Results: {len(results)}")
         return results
     else:
         return None

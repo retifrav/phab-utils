@@ -2,6 +2,7 @@
 
 <!-- MarkdownTOC -->
 
+- [?](#)
 - [0.6.0](#060)
 - [0.5.1](#051)
 - [0.5.0](#050)
@@ -13,6 +14,14 @@
 - [0.1.0](#010)
 
 <!-- /MarkdownTOC -->
+
+## ?
+
+Released on `?`.
+
+- `databases`
+    + `tap`
+        * `escapeSpecialCharactersForAdql()` - escaping certain special characters (*such as single quotes*) in ADQL queries
 
 ## 0.6.0
 

@@ -3,6 +3,8 @@ import pytest
 from uio.utility.databases import tap, lightcurves, simbad
 from . import somethingThatDoesntExist
 
+from pyvo.dal.exceptions import DALQueryError
+
 from typing import Tuple
 
 
@@ -27,6 +29,36 @@ def test_unknown_tap_service(somethingThatDoesntExist: str) -> None:
         match=r"^There is no TAP service under the name.*$"
     ):
         tapServiceEndpoint = tap.getServiceEndpoint(somethingThatDoesntExist)
+
+
+def test_escape_special_characters_for_adql() -> None:
+    rawQuery = " ".join((
+        "SELECT oid FROM basic",
+        "WHERE main_id = 'NAME Teegarden's Star'",
+        "AND main_id != 'someone else's star'"
+    ))
+    # escaped ADQL query
+    tap.queryService(
+        tap.getServiceEndpoint("simbad"),
+        tap.escapeSpecialCharactersForAdql(rawQuery),
+        tryToReExecuteOnFailure=False
+    )
+    # raw ADQL query that should fail because of unescaped special character
+    with pytest.raises(
+        DALQueryError,
+        match=r"^Incorrect ADQL query.*$"
+    ):
+        tap.queryService(
+            tap.getServiceEndpoint("simbad"),
+            rawQuery,
+            tryToReExecuteOnFailure=False
+        )
+    # raw ADQL query, but with enabled re-execution on failure
+    tap.queryService(
+        tap.getServiceEndpoint("simbad"),
+        rawQuery,
+        tryToReExecuteOnFailure=True
+    )
 
 
 def test_getting_stellar_parameter_from_nasa() -> None:
