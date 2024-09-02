@@ -208,9 +208,9 @@ def queryService(
                     f"error message: {ex}"
                 ))
             )
-            results = tapService.search(
-                escapeSpecialCharactersForAdql(adqlQuery)
-            )
+            adqlQueryEscaped = escapeSpecialCharactersForAdql(adqlQuery)
+            logger.debug(f"Escaped ADQL query to execute: {adqlQueryEscaped}")
+            results = tapService.search(adqlQueryEscaped)
         else:
             raise
     if results is not None and len(results) > 0:
