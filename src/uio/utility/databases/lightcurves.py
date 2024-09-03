@@ -94,17 +94,17 @@ def getLightCurveStats(
     if not stats:
         print("Didn't find any results for this star")
     else:
-        authorName = "Kepler"
+        missionName = "Kepler"
         cadenceType = "long"
         sectors = stats.get(
-            authorName,
+            missionName,
             {}
         ).get(cadenceType)
         if sectors is None:
             print(
                 " ".join((
                     "There doesn't seem to be any sectors",
-                    f"with [{cadenceType}] cadence by [{authorName}]"
+                    f"with [{cadenceType}] cadence by [{missionName}]"
                 ))
             )
         else:
@@ -115,14 +115,14 @@ def getLightCurveStats(
                     " ".join((
                         f"For some reason, the [{totalProperty}] property",
                         f"is missing from the [{cadenceType}] cadence",
-                        f"collection by [{authorName}]"
+                        f"collection by [{missionName}]"
                     ))
                 )
             else:
                 print(
                     " ".join((
                         f"Total amount of sectors with [{cadenceType}]",
-                        f"cadence by [{authorName}]: {sectorsCount}",
+                        f"cadence by [{missionName}]: {sectorsCount}",
                     ))
                 )
                 bySectors = sectors.get("by-sectors")
@@ -131,7 +131,7 @@ def getLightCurveStats(
                         " ".join((
                             "For some reason, the [total] property is missing",
                             f"from the [{cadenceType}] cadence collection",
-                            f"by [{authorName}]"
+                            f"by [{missionName}]"
                         ))
                     )
                 else:
