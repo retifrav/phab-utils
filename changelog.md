@@ -22,6 +22,10 @@ Released on `?`.
 - `databases`
     + `tap`
         * `escapeSpecialCharactersForAdql()` - escaping certain special characters (*such as single quotes*) in ADQL queries
+        * `getPlanetaryParameterReferenceFromNASA()` - getting the publication reference for the given planetary parameter value from NASA database
+- `strings` - new module for working with strings
+    + `extraction`
+        * `refFromFullReferenceNASA()` - extracting just the reference value from the full reference string
 
 ## 0.6.0
 
