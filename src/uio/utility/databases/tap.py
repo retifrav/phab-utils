@@ -16,6 +16,7 @@ import re
 from typing import Optional, Dict, List, Tuple, Any
 
 from ..logs.log import logger
+from ..strings import extraction
 
 services: Dict[str, Dict] = {
     "nasa":
@@ -283,6 +284,47 @@ def getPlanetaryParameterFromNASA(
     if results:
         # logger.debug(f"All results for this parameter:\n{results}")
         return results[0].get(param)
+    else:
+        return None
+
+
+def getPlanetaryParameterReferenceFromNASA(
+    planetName: str,
+    paramName: str,
+    paramValue: int | float | str
+) -> Optional[Any]:
+    """
+    Get the publication reference for the given planetary parameter value
+    from NASA database.
+
+    Example:
+
+    ``` py
+    from uio.utility.databases import tap
+
+    val = tap.getPlanetaryParameterReferenceFromNASA(
+        "Kepler-11 b",
+        "pl_massj",
+        0.0069
+    )
+    print(val)
+    ```
+    """
+    if isinstance(paramValue, str):
+        paramValue = f"'{paramValue}'"
+    results = queryService(
+        getServiceEndpoint("nasa"),
+        " ".join((
+            f"SELECT pl_refname",  # TOP is broken in NASA: https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/#top-clause-is-broken
+            f"FROM ps",
+            f"WHERE pl_name = '{planetName}' AND {paramName} = {paramValue}",
+            "ORDER BY pl_pubdate DESC"
+        ))
+    )
+    if results:
+        # logger.debug(f"All results:\n{results}")
+        fullRefValue = results[0].get("pl_refname")
+        return extraction.refFromFullReferenceNASA(fullRefValue)
     else:
         return None
 
