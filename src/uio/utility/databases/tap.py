@@ -13,7 +13,7 @@ via [TAP](https://ivoa.net/documents/TAP/) interface.
 import pyvo
 import re
 
-from typing import Optional, Dict, List, Tuple, Any
+from typing import Optional, Dict, List, Tuple, Any, cast
 
 from ..logs.log import logger
 from ..strings import extraction
@@ -258,7 +258,8 @@ def getParametersThatAreDoubleInNASA() -> List[str]:
 
 def getStellarParameterFromNASA(
     systemName: str,
-    param: str
+    param: str,
+    parameterTypeIsDouble: bool = False
 ) -> Optional[Any]:
     """
     Get the latest (*the newest*) published stellar parameter
@@ -269,14 +270,25 @@ def getStellarParameterFromNASA(
     ``` py
     from uio.utility.databases import tap
 
-    val = tap.getStellarParameterFromNASA("Kepler-11", "st_teff")
+    doubles = tap.getParametersThatAreDoubleInNASA()
+    param = "st_teff"
+    val = tap.getStellarParameterFromNASA(
+        "Kepler-11",
+        param,
+        parameterTypeIsDouble=(param in doubles)
+    )
     print(val)
     ```
     """
     results = queryService(
         getServiceEndpoint("nasa"),
         " ".join((
-            f"SELECT {param}",  # TOP is broken in NASA: https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/#top-clause-is-broken
+            # TOP is broken in NASA: https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/#top-clause-is-broken
+            (
+                f"SELECT {param}"
+                if not parameterTypeIsDouble else
+                f"SELECT CAST({param} AS REAL) AS {param}_real"
+            ),
             f"FROM ps",
             f"WHERE hostname = '{systemName}' AND {param} IS NOT NULL",
             "ORDER BY pl_pubdate DESC"
@@ -284,15 +296,19 @@ def getStellarParameterFromNASA(
     )
     if results:
         # logger.debug(f"All results for this parameter:\n{results}")
-        val = results[0].get(param)
-        return val
+        return (
+            results[0].get(param)
+            if not parameterTypeIsDouble else
+            results[0].get(f"{param}_real")
+        )
     else:
         return None
 
 
 def getPlanetaryParameterFromNASA(
     planetName: str,
-    param: str
+    param: str,
+    parameterTypeIsDouble: bool = False
 ) -> Optional[Any]:
     """
     Get the latest (*the newest*) published planetary parameter
@@ -303,14 +319,25 @@ def getPlanetaryParameterFromNASA(
     ``` py
     from uio.utility.databases import tap
 
-    val = tap.getPlanetaryParameterFromNASA("Kepler-11 b", "pl_massj")
+    doubles = tap.getParametersThatAreDoubleInNASA()
+    param = "pl_massj"
+    val = tap.getPlanetaryParameterFromNASA(
+        "Kepler-11 b",
+        param,
+        parameterTypeIsDouble=(param in doubles)
+    )
     print(val)
     ```
     """
     results = queryService(
         getServiceEndpoint("nasa"),
         " ".join((
-            f"SELECT {param}",  # TOP is broken in NASA: https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/#top-clause-is-broken
+            # TOP is broken in NASA: https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/#top-clause-is-broken
+            (
+                f"SELECT {param}"
+                if not parameterTypeIsDouble else
+                f"SELECT CAST({param} AS REAL) AS {param}_real"
+            ),
             f"FROM ps",
             f"WHERE pl_name = '{planetName}' AND {param} IS NOT NULL",
             "ORDER BY pl_pubdate DESC"
@@ -318,7 +345,11 @@ def getPlanetaryParameterFromNASA(
     )
     if results:
         # logger.debug(f"All results for this parameter:\n{results}")
-        return results[0].get(param)
+        return (
+            results[0].get(param)
+            if not parameterTypeIsDouble else
+            results[0].get(f"{param}_real")
+        )
     else:
         return None
 
@@ -340,28 +371,13 @@ def getPlanetaryParameterReferenceFromNASA(
     ``` py
     from uio.utility.databases import tap
 
-    val = tap.getPlanetaryParameterReferenceFromNASA(
-        "Kepler-11 b",
-        "pl_massj",
-        0.0069
-    )
-    print(val)
-    ```
-
-    If it doesn't return anything, that might be because of the doubles
-    precision problem, so then get all the parameters that have `double`
-    type and try to re-execute the query:
-
-    ``` py
-    from uio.utility.databases import tap
-
     doubles = tap.getParametersThatAreDoubleInNASA()
     param = "pl_massj"
     val = tap.getPlanetaryParameterReferenceFromNASA(
         "KOI-4777.01",
         param,
         0.31212,
-        param in doubles
+        parameterTypeIsDouble=(param in doubles)
     )
     print(val)
     ```
@@ -408,6 +424,7 @@ def getPlanetaryParameterReferenceFromNASA(
         paramValueLength = len(str(paramValue))
         # casting to VARCHAR drops leading 0, but also we need to drop
         # the trailing number, because NASA does rounding too
+        paramValue = cast(float, paramValue)
         if abs(paramValue) < 1:
             if paramValue < 0:
                 paramValue = f"'-{str(paramValue)[2:-1]}%'"
@@ -447,7 +464,8 @@ def getPlanetaryParameterReferenceFromNASA(
 def getParameterFromNASA(
     systemName: str,
     planetName: str,
-    param: str
+    param: str,
+    parameterTypeIsDouble: bool = False
 ) -> Optional[Any]:
     """
     Get the latest (*the newest*) published parameter from NASA database.
@@ -464,16 +482,30 @@ def getParameterFromNASA(
     systemName = "Kepler-11"
     planetName = "Kepler-11 b"
     params = ["st_teff", "pl_massj"]
+    doubles = tap.getParametersThatAreDoubleInNASA()
     for p in params:
-        val = tap.getParameterFromNASA(systemName, planetName, p)
+        val = tap.getParameterFromNASA(
+            systemName,
+            planetName,
+            p,
+            parameterTypeIsDouble=(p in doubles)
+        )
         print(val)
     ```
     """
     result = None
     if param in mappings["NASA-to-PADC"]["stars"]:  # get stellar parameter
-        result = getStellarParameterFromNASA(systemName, param)
+        result = getStellarParameterFromNASA(
+            systemName,
+            param,
+            parameterTypeIsDouble
+        )
     else:  # get planetary parameter
-        result = getPlanetaryParameterFromNASA(planetName, param)
+        result = getPlanetaryParameterFromNASA(
+            planetName,
+            param,
+            parameterTypeIsDouble
+        )
     return result
 
 
