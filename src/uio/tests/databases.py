@@ -61,6 +61,11 @@ def test_escape_special_characters_for_adql() -> None:
     )
 
 
+def test_get_parameters_that_are_double_in_nasa() -> None:
+    doubles = tap.getParametersThatAreDoubleInNASA()
+    assert len(doubles) > 1
+
+
 def test_getting_stellar_parameter_from_nasa() -> None:
     starName = "Kepler-11"
     hostname = tap.getStellarParameterFromNASA(starName, "hostname")
@@ -71,6 +76,42 @@ def test_getting_planetary_parameter_from_nasa() -> None:
     planetName = "Kepler-11 b"
     plname = tap.getPlanetaryParameterFromNASA(planetName, "pl_name")
     assert plname == planetName
+
+
+def test_get_planetary_parameter_reference_from_nasa() -> None:
+    # no workarounds required
+    ref = tap.getPlanetaryParameterReferenceFromNASA(
+        "Kepler-11 b",
+        "pl_massj",
+        0.0069,
+        parametersThatAreDoubles=[],
+        tryToReExecuteIfNoResults=False,
+        returnOriginalReferenceOnFailureToExtract=False
+    )
+    assert ref == "2014A&A...571A..38B"
+
+    # no results without applying a workaround for the doubles precision
+    ref = tap.getPlanetaryParameterReferenceFromNASA(
+        "KOI-4777.01",
+        "pl_massj",
+        0.31212,
+        parametersThatAreDoubles=[],
+        tryToReExecuteIfNoResults=False,
+        returnOriginalReferenceOnFailureToExtract=False
+    )
+    assert ref is None
+
+    # applying a workaround for the doubles precision
+    doubles = tap.getParametersThatAreDoubleInNASA()
+    ref = tap.getPlanetaryParameterReferenceFromNASA(
+        "KOI-4777.01",
+        "pl_massj",
+        0.31212,
+        parametersThatAreDoubles=doubles,
+        tryToReExecuteIfNoResults=True,
+        returnOriginalReferenceOnFailureToExtract=False
+    )
+    assert ref == "2022AJ....163....3C"
 
 
 def test_getting_parameter_from_padc() -> None:

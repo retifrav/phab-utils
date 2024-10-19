@@ -94,5 +94,8 @@ To run tests:
 
 ``` sh
 $ pip install pytest
+
 $ python -m pytest ./src/uio/tests/*[^_*].py
+$ python -m pytest ./src/uio/tests/databases.py
+$ python -m pytest ./src/uio/tests/databases.py -k "test_get_parameters_that_are_double_in_nasa"
 ```
