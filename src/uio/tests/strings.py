@@ -7,12 +7,12 @@ from . import somethingThatDoesntExist
 def test_ref_from_full_reference_nasa(
     somethingThatDoesntExist: str
 ) -> None:
-    ref = extraction.refFromFullReferenceNASA(
+    ref = extraction.adsRefFromFullReferenceNASA(
         "<a refstr=BORSATO_ET_AL__2014 href=https://ui.adsabs.harvard.edu/abs/2014A&A...571A..38B/abstract target=ref>Borsato et al. 2014</a>"
     )
     assert ref == "2014A&A...571A..38B"
 
-    ref = extraction.refFromFullReferenceNASA(
+    ref = extraction.adsRefFromFullReferenceNASA(
         somethingThatDoesntExist
     )
     assert ref is None, \

@@ -25,7 +25,7 @@ Released on `?`.
         * `getPlanetaryParameterReferenceFromNASA()` - getting the publication reference for the given planetary parameter value from NASA database
 - `strings` - new module for working with strings
     + `extraction`
-        * `refFromFullReferenceNASA()` - extracting just the reference value from the full reference string
+        * `adsRefFromFullReferenceNASA()` - extracting just the ADS reference value from the full reference string
 
 ## 0.6.0
 

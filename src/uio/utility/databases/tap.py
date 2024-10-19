@@ -221,6 +221,41 @@ def queryService(
         return None
 
 
+def getParametersThatAreDoubleInNASA() -> List[str]:
+    """
+    Get the list of parameters names in the NASA `ps` table that have
+    the `double` type. That is needed so you knew when to apply
+    `CAST(PARAMETER_NAME_HERE AS REAL)` in your `SELECT` statements
+    or `CAST(PARAMETER_NAME_HERE AS VARCHAR(30))` in your `WHERE`
+    statements, otherwise NASA returns truncated values by default
+    (according to their `format` value in `tap_schema.columns`),
+    so you might not get the expected results.
+
+    Example:
+
+    ``` py
+    from uio.utility.databases import tap
+
+    doubles = tap.getParametersThatAreDoubleInNASA()
+    print(doubles)
+    ```
+    """
+    doubles: List[str] = list()
+
+    results = queryService(
+        getServiceEndpoint("nasa"),
+        " ".join((
+            f"SELECT column_name",
+            f"FROM tap_schema.columns",
+            f"WHERE table_name = 'ps' AND datatype = 'double'"
+        ))
+    )
+    if results:
+        doubles = list(results.getcolumn("column_name").flatten())
+
+    return doubles
+
+
 def getStellarParameterFromNASA(
     systemName: str,
     param: str
@@ -291,7 +326,10 @@ def getPlanetaryParameterFromNASA(
 def getPlanetaryParameterReferenceFromNASA(
     planetName: str,
     paramName: str,
-    paramValue: int | float | str
+    paramValue: int | float | str,
+    parametersThatAreDoubles: List[str] = list(),
+    tryToReExecuteIfNoResults: bool = True,
+    returnOriginalReferenceOnFailureToExtract: bool = True
 ) -> Optional[Any]:
     """
     Get the publication reference for the given planetary parameter value
@@ -309,22 +347,83 @@ def getPlanetaryParameterReferenceFromNASA(
     )
     print(val)
     ```
+
+    If it doesn't return anything, that might be because of the doubles
+    precision problem, so then get all the parameters that have `double`
+    type and try to re-execute the query:
+
+    ``` py
+    from uio.utility.databases import tap
+
+    doubles = tap.getParametersThatAreDoubleInNASA()
+
+    val = tap.getPlanetaryParameterReferenceFromNASA(
+        "KOI-4777.01",
+        "pl_massj",
+        0.31212,
+        parametersThatAreDoubles=doubles
+    )
+    print(val)
+    ```
     """
+    fullRefValue: Optional[str] = None
+
+    parameterIsString: bool = False
     if isinstance(paramValue, str):
-        paramValue = f"'{paramValue}'"
+        # logger.debug(f"The {paramName} value {paramValue} is a string")
+        parameterIsString = True
     results = queryService(
         getServiceEndpoint("nasa"),
         " ".join((
             f"SELECT pl_refname",  # TOP is broken in NASA: https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/#top-clause-is-broken
             f"FROM ps",
-            f"WHERE pl_name = '{planetName}' AND {paramName} = {paramValue}",
+            f"WHERE pl_name = '{planetName}' AND {paramName}",
+            (
+                f"= {paramValue}"
+                if not parameterIsString else
+                f"= '{paramValue}'"
+            ),
             "ORDER BY pl_pubdate DESC"
         ))
     )
     if results:
         # logger.debug(f"All results:\n{results}")
         fullRefValue = results[0].get("pl_refname")
-        return extraction.refFromFullReferenceNASA(fullRefValue)
+    # might be because of that doubles precision problem, thank you, NASA
+    elif results is None and tryToReExecuteIfNoResults:
+        parameterIsDouble: bool = False
+        paramValueLength = len(str(paramValue))
+        if paramName in parametersThatAreDoubles:
+            # logger.debug(f"The {paramName} value {paramValue} is a double")
+            parameterIsDouble = True
+            # casting to VARCHAR drops leading 0, but also we need to drop
+            # the trailing number, because NASA does rounding too
+            paramValue = f"'{str(paramValue)[1:-1]}%'"
+        results = queryService(
+            getServiceEndpoint("nasa"),
+            " ".join((
+                f"SELECT pl_refname",  # TOP is broken in NASA: https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/#top-clause-is-broken
+                f"FROM ps",
+                f"WHERE pl_name = '{planetName}' AND",
+                (
+                    f"{paramName} = {paramValue}"
+                    if not parameterIsDouble else
+                    f"CAST({paramName} AS VARCHAR({paramValueLength})) LIKE {paramValue}"
+                ),
+                "ORDER BY pl_pubdate DESC"
+            ))
+        )
+        if results:
+            # logger.debug(f"All results:\n{results}")
+            fullRefValue = results[0].get("pl_refname")
+    else:
+        return None
+
+    if fullRefValue is not None:
+        ref = extraction.adsRefFromFullReferenceNASA(fullRefValue)
+        if ref is None and returnOriginalReferenceOnFailureToExtract:
+            return fullRefValue
+        return ref
     else:
         return None
 

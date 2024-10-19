@@ -9,7 +9,7 @@ reference string in NASA database.
 """
 
 
-def refFromFullReferenceNASA(fullRefValue: str) -> Optional[str]:
+def adsRefFromFullReferenceNASA(fullRefValue: str) -> Optional[str]:
     """
     Extract just the reference value from the full reference string.
 
@@ -18,7 +18,7 @@ def refFromFullReferenceNASA(fullRefValue: str) -> Optional[str]:
     ``` py
     from uio.utility.strings import extraction
 
-    val = extraction.refFromFullReferenceNASA(
+    val = extraction.adsRefFromFullReferenceNASA(
         "<a refstr=BORSATO_ET_AL__2014 href=https://ui.adsabs.harvard.edu/abs/2014A&A...571A..38B/abstract target=ref>Borsato et al. 2014</a>"
     )
     print(val)
