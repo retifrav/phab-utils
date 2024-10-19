@@ -327,7 +327,7 @@ def getPlanetaryParameterReferenceFromNASA(
     planetName: str,
     paramName: str,
     paramValue: int | float | str,
-    parametersThatAreDoubles: List[str] = list(),
+    parameterTypeIsDouble: bool = False,
     tryToReExecuteIfNoResults: bool = True,
     returnOriginalReferenceOnFailureToExtract: bool = True
 ) -> Optional[Any]:
@@ -356,17 +356,25 @@ def getPlanetaryParameterReferenceFromNASA(
     from uio.utility.databases import tap
 
     doubles = tap.getParametersThatAreDoubleInNASA()
-
+    param = "pl_massj"
     val = tap.getPlanetaryParameterReferenceFromNASA(
         "KOI-4777.01",
-        "pl_massj",
+        param,
         0.31212,
-        parametersThatAreDoubles=doubles
+        param in doubles
     )
     print(val)
     ```
     """
     fullRefValue: Optional[str] = None
+
+    if tryToReExecuteIfNoResults and not parameterTypeIsDouble:
+        logger.warning(
+            " ".join((
+                "The re-execution flag is passed, but parameter type",
+                "is not double, so the query will not be re-executed"
+            ))
+        )
 
     parameterIsString: bool = False
     if isinstance(paramValue, str):
@@ -390,15 +398,23 @@ def getPlanetaryParameterReferenceFromNASA(
         # logger.debug(f"All results:\n{results}")
         fullRefValue = results[0].get("pl_refname")
     # might be because of that doubles precision problem, thank you, NASA
-    elif results is None and tryToReExecuteIfNoResults:
-        parameterIsDouble: bool = False
+    elif results is None and parameterTypeIsDouble and tryToReExecuteIfNoResults:
+        logger.warning(
+            " ".join((
+                "The query returned no results, will try to execute again,",
+                "but this time with the parameter casted from double to string"
+            ))
+        )
         paramValueLength = len(str(paramValue))
-        if paramName in parametersThatAreDoubles:
-            # logger.debug(f"The {paramName} value {paramValue} is a double")
-            parameterIsDouble = True
-            # casting to VARCHAR drops leading 0, but also we need to drop
-            # the trailing number, because NASA does rounding too
-            paramValue = f"'{str(paramValue)[1:-1]}%'"
+        # casting to VARCHAR drops leading 0, but also we need to drop
+        # the trailing number, because NASA does rounding too
+        if abs(paramValue) < 1:
+            if paramValue < 0:
+                paramValue = f"'-{str(paramValue)[2:-1]}%'"
+            else:
+                paramValue = f"'{str(paramValue)[1:-1]}%'"
+        else:
+            paramValue = f"'{str(paramValue)[:-1]}%'"
         results = queryService(
             getServiceEndpoint("nasa"),
             " ".join((
@@ -407,7 +423,7 @@ def getPlanetaryParameterReferenceFromNASA(
                 f"WHERE pl_name = '{planetName}' AND",
                 (
                     f"{paramName} = {paramValue}"
-                    if not parameterIsDouble else
+                    if not parameterTypeIsDouble else
                     f"CAST({paramName} AS VARCHAR({paramValueLength})) LIKE {paramValue}"
                 ),
                 "ORDER BY pl_pubdate DESC"

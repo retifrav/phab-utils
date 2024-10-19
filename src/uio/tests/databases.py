@@ -84,7 +84,7 @@ def test_get_planetary_parameter_reference_from_nasa() -> None:
         "Kepler-11 b",
         "pl_massj",
         0.0069,
-        parametersThatAreDoubles=[],
+        parameterTypeIsDouble=False,
         tryToReExecuteIfNoResults=False,
         returnOriginalReferenceOnFailureToExtract=False
     )
@@ -95,7 +95,7 @@ def test_get_planetary_parameter_reference_from_nasa() -> None:
         "KOI-4777.01",
         "pl_massj",
         0.31212,
-        parametersThatAreDoubles=[],
+        parameterTypeIsDouble=False,
         tryToReExecuteIfNoResults=False,
         returnOriginalReferenceOnFailureToExtract=False
     )
@@ -103,11 +103,12 @@ def test_get_planetary_parameter_reference_from_nasa() -> None:
 
     # applying a workaround for the doubles precision
     doubles = tap.getParametersThatAreDoubleInNASA()
+    param = "pl_massj"
     ref = tap.getPlanetaryParameterReferenceFromNASA(
         "KOI-4777.01",
-        "pl_massj",
+        param,
         0.31212,
-        parametersThatAreDoubles=doubles,
+        parameterTypeIsDouble=(param in doubles),
         tryToReExecuteIfNoResults=True,
         returnOriginalReferenceOnFailureToExtract=False
     )
