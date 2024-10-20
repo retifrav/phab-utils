@@ -2,7 +2,7 @@
 
 <!-- MarkdownTOC -->
 
-- [?](#)
+- [0.7.0](#070)
 - [0.6.0](#060)
 - [0.5.1](#051)
 - [0.5.0](#050)
@@ -15,17 +15,20 @@
 
 <!-- /MarkdownTOC -->
 
-## ?
+## 0.7.0
 
-Released on `?`.
+Released on `2024-10-20`.
 
 - `databases`
     + `tap`
         * `escapeSpecialCharactersForAdql()` - escaping certain special characters (*such as single quotes*) in ADQL queries
         * `getPlanetaryParameterReferenceFromNASA()` - getting the publication reference for the given planetary parameter value from NASA database
+        * `getStellarParameterFromNASA()` and `getPlanetaryParameterFromNASA()` can optionally get non-rounded float values to work around the problem with [inconsistent values](https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/#float-values-are-rounded-on-select-but-compared-to-originals-in-where) in `SELECT`/`WHERE`
 - `strings` - new module for working with strings
     + `extraction`
         * `adsRefFromFullReferenceNASA()` - extracting just the ADS reference value from the full reference string
+    + `conversion`
+        * `floatToStringForADQLcastVarchar()` - converting floats to strings for ADQL
 
 ## 0.6.0
 
