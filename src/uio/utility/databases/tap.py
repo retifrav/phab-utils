@@ -16,7 +16,7 @@ import re
 from typing import Optional, Dict, List, Tuple, Any, cast
 
 from ..logs.log import logger
-from ..strings import extraction
+from ..strings import extraction, conversion
 
 services: Dict[str, Dict] = {
     "nasa":
@@ -36,19 +36,23 @@ services: Dict[str, Dict] = {
             "pl_orbsmax",
             "pl_radj",
             "semi_major_axis"
-        ]
+        ],
+        "drops-leading-zero-on-cast-to-varchar": True
     },
     "padc":
     {
-        "endpoint": "http://voparis-tap-planeto.obspm.fr/tap"
+        "endpoint": "http://voparis-tap-planeto.obspm.fr/tap",
+        "drops-leading-zero-on-cast-to-varchar": False
     },
     "gaia":
     {
-        "endpoint": "https://gea.esac.esa.int/tap-server/tap"
+        "endpoint": "https://gea.esac.esa.int/tap-server/tap",
+        "drops-leading-zero-on-cast-to-varchar": False
     },
     "simbad":
     {
         "endpoint": "http://simbad.cds.unistra.fr/simbad/sim-tap/sync"
+        # does not support CAST, so no "drops-leading-zero-on-cast-to-varchar"
     }
 }
 """
@@ -227,7 +231,7 @@ def getParametersThatAreDoubleInNASA() -> List[str]:
     the `double` type. That is needed so you knew when to apply
     `CAST(PARAMETER_NAME_HERE AS REAL)` in your `SELECT` statements
     or `CAST(PARAMETER_NAME_HERE AS VARCHAR(30))` in your `WHERE`
-    statements, otherwise NASA returns truncated values by default
+    statements, otherwise NASA returns rounded values by default
     (according to their `format` value in `tap_schema.columns`),
     so you might not get the expected results.
 
@@ -264,6 +268,10 @@ def getStellarParameterFromNASA(
     """
     Get the latest (*the newest*) published stellar parameter
     from NASA database.
+
+    The `parameterTypeIsDouble` argument  is a workaround for the problem with
+    [inconsistent values](https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/#float-values-are-rounded-on-select-but-compared-to-originals-in-where)
+    in `SELECT`/`WHERE`.
 
     Example:
 
@@ -313,6 +321,10 @@ def getPlanetaryParameterFromNASA(
     """
     Get the latest (*the newest*) published planetary parameter
     from NASA database.
+
+    The `parameterTypeIsDouble` argument  is a workaround for the problem with
+    [inconsistent values](https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/#float-values-are-rounded-on-select-but-compared-to-originals-in-where)
+    in `SELECT`/`WHERE`.
 
     Example:
 
@@ -366,6 +378,10 @@ def getPlanetaryParameterReferenceFromNASA(
     Get the publication reference for the given planetary parameter value
     from NASA database.
 
+    The `parameterTypeIsDouble` argument  is a workaround for the problem with
+    [inconsistent values](https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/#float-values-are-rounded-on-select-but-compared-to-originals-in-where)
+    in `SELECT`/`WHERE`.
+
     Example:
 
     ``` py
@@ -414,7 +430,13 @@ def getPlanetaryParameterReferenceFromNASA(
         # logger.debug(f"All results:\n{results}")
         fullRefValue = results[0].get("pl_refname")
     # might be because of that doubles precision problem, thank you, NASA
-    elif results is None and parameterTypeIsDouble and tryToReExecuteIfNoResults:
+    elif (
+        results is None
+        and
+        parameterTypeIsDouble
+        and
+        tryToReExecuteIfNoResults
+    ):
         logger.warning(
             " ".join((
                 "The query returned no results, will try to execute again,",
@@ -422,27 +444,21 @@ def getPlanetaryParameterReferenceFromNASA(
             ))
         )
         paramValueLength = len(str(paramValue))
-        # casting to VARCHAR drops leading 0, but also we need to drop
-        # the trailing number, because NASA does rounding too
         paramValue = cast(float, paramValue)
-        if abs(paramValue) < 1:
-            if paramValue < 0:
-                paramValue = f"'-{str(paramValue)[2:-1]}%'"
-            else:
-                paramValue = f"'{str(paramValue)[1:-1]}%'"
-        else:
-            paramValue = f"'{str(paramValue)[:-1]}%'"
+        paramValueString = conversion.floatToStringForADQLcastVarchar(
+            paramValue,
+            dropLeadingZero=True
+        )
         results = queryService(
             getServiceEndpoint("nasa"),
             " ".join((
                 f"SELECT pl_refname",  # TOP is broken in NASA: https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/#top-clause-is-broken
                 f"FROM ps",
-                f"WHERE pl_name = '{planetName}' AND",
-                (
-                    f"{paramName} = {paramValue}"
-                    if not parameterTypeIsDouble else
-                    f"CAST({paramName} AS VARCHAR({paramValueLength})) LIKE {paramValue}"
-                ),
+                f"WHERE pl_name = '{planetName}'",
+                " ".join((
+                    f"AND CAST({paramName} AS VARCHAR({paramValueLength}))",
+                    f"LIKE '{paramValueString}'"
+                )),
                 "ORDER BY pl_pubdate DESC"
             ))
         )
@@ -473,6 +489,10 @@ def getParameterFromNASA(
     based on the `uio.utility.databases.tap.mappings` list. This might be
     convenient when one only has a list of parameters names
     without specifying which one is of which kind.
+
+    The `parameterTypeIsDouble` argument  is a workaround for the problem with
+    [inconsistent values](https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/#float-values-are-rounded-on-select-but-compared-to-originals-in-where)
+    in `SELECT`/`WHERE`.
 
     Example:
 

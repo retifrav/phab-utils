@@ -1,6 +1,6 @@
 import pytest
 
-from uio.utility.strings import extraction
+from uio.utility.strings import extraction, conversion
 from . import somethingThatDoesntExist
 
 
@@ -20,3 +20,29 @@ def test_ref_from_full_reference_nasa(
             "There can't be a reference value in",
             f"\"{somethingThatDoesntExist}\" string"
         ))
+
+
+def test_float_to_string_for_adql_cast_varchar() -> None:
+    val = conversion.floatToStringForADQLcastVarchar(1.2345, False)
+    assert val == "1.234%"
+
+    val = conversion.floatToStringForADQLcastVarchar(1.2345, True)
+    assert val == "1.234%"
+
+    val = conversion.floatToStringForADQLcastVarchar(0.2345, False)
+    assert val == "0.234%"
+
+    val = conversion.floatToStringForADQLcastVarchar(0.2345, True)
+    assert val == ".234%"
+
+    val = conversion.floatToStringForADQLcastVarchar(-1.2345, False)
+    assert val == "-1.234%"
+
+    val = conversion.floatToStringForADQLcastVarchar(-1.2345, True)
+    assert val == "-1.234%"
+
+    val = conversion.floatToStringForADQLcastVarchar(-0.2345, False)
+    assert val == "-0.234%"
+
+    val = conversion.floatToStringForADQLcastVarchar(-0.2345, True)
+    assert val == "-.234%"
