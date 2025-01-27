@@ -2,6 +2,7 @@
 
 <!-- MarkdownTOC -->
 
+- [0.8.0](#080)
 - [0.7.0](#070)
 - [0.6.0](#060)
 - [0.5.1](#051)
@@ -14,6 +15,14 @@
 - [0.1.0](#010)
 
 <!-- /MarkdownTOC -->
+
+## 0.8.0
+
+Released on `?`.
+
+- `math` - new module for mathematics
+    + `statistics`
+        * `findOutliers()` - marking outliers in an array
 
 ## 0.7.0
 
