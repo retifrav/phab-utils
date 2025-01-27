@@ -139,10 +139,16 @@ ERROR: pip's legacy dependency resolver does not consider dependency conflicts w
 pyvo 1.4.1 requires astropy>=4.1, but you'll have astropy 0.0.0 which is incompatible.
 lightkurve 2.4.0 requires astropy>=5.0, but you'll have astropy 0.0.0 which is incompatible.
 astroquery 0.4.6 requires astropy>=4.0, but you'll have astropy 0.0.0 which is incompatible.
-altaipony 2.0.1 requires astropy>=4.1, but you'll have astropy 0.0.0 which is incompatible.
 ```
 
-but these doesn't seem to actually affect anything.
+but these doesn't seem to actually affect anything. Although `lightkurve` might upgrade its dependencies (*`numpy`, `scipy`, etc*) along the way, so don't let it do that:
+
+``` sh
+$ pip uninstall lightkurve
+$ pip install --no-deps lightkurve==2.4.0
+```
+
+and then probaly re-install the dependencies to their specified versions, if any of them were upgraded after all.
 
 Anyway, installing Astropy v4.3.1 will help with `MaskedNDArray` issue, but it will now be failing with:
 
