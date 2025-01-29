@@ -1,6 +1,6 @@
 import pytest
 
-from phab.utils.databases import tap, lightcurves, simbad
+from utils.databases import tap, lightcurves, simbad
 from . import somethingThatDoesntExist
 
 from pyvo.dal.exceptions import DALQueryError

@@ -486,7 +486,7 @@ def getParameterFromNASA(
     """
     Get the latest (*the newest*) published parameter from NASA database.
     The parameter kind (*stellar or planetary*) is determined
-    based on the `phab.utils.databases.tap.mappings` list. This might be
+    based on the `utils.databases.tap.mappings` list. This might be
     convenient when one only has a list of parameters names
     without specifying which one is of which kind.
 
@@ -537,7 +537,7 @@ def getParameterErrorsFromNASA(
     """
     Get the latest (*the newest*) published stellar or planetary
     parameter errors from NASA database. This is a convenience function
-    that uses `phab.utils.databases.tap.getParameterFromNASA`
+    that uses `utils.databases.tap.getParameterFromNASA`
     to get `PARAMerr2` (*minimum error*) and `PARAMerr1` (*maximum error*).
 
     Example:
@@ -599,7 +599,7 @@ def getParameterErrorsFromPADC(
     """
     Get stellar or planetary parameter errors from PADC database.
     This is a convenience function that uses
-    `phab.utils.databases.tap.getParameterFromPADC` to get `PARAM_error_min`
+    `utils.databases.tap.getParameterFromPADC` to get `PARAM_error_min`
     and `PARAM_error_max`.
 
     Example:
@@ -668,7 +668,7 @@ def getStellarParameterFromSimbadByObjectID(
     by using the SIMBAD's object ID.
 
     If you only have the star name, then first you will need to find
-    the object ID with `phab.utils.databases.simbad.getObjectID`.
+    the object ID with `utils.databases.simbad.getObjectID`.
 
     Example:
 
@@ -688,7 +688,7 @@ def getStellarParameterFromSimbadByObjectID(
         print(f"Value: {val}, reference: {ref}")
     ```
 
-    There is also a convenience function `phab.utils.databases.simbad.getStellarParameter`.
+    There is also a convenience function `utils.databases.simbad.getStellarParameter`.
     """
     results = queryService(
         getServiceEndpoint("simbad"),

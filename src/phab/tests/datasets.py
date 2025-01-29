@@ -3,7 +3,7 @@ import pytest
 import pandas
 import numpy
 
-from phab.utils.datasets import pandas as pnd
+from utils.datasets import pandas as pnd
 
 
 def test_merge_pandas() -> None:

@@ -1,7 +1,7 @@
 import pytest
 import numpy
 
-from phab.utils.math import statistics
+from utils.math import statistics
 
 
 @pytest.mark.parametrize(

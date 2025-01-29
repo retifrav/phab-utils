@@ -71,9 +71,9 @@ def mergePickles(
     """
     Merge several pickle files into one. Looks for pickle files (*`*.pkl`*)
     in the provided folder, reads them to [Pandas](https://pandas.pydata.org)
-    tables (*with `phab.utils.files.pickle.openPickleAsPandasTable`*)
+    tables (*with `utils.files.pickle.openPickleAsPandasTable`*)
     and concatenates those into one final Pandas table
-    (*using `phab.utils.datasets.pandas.mergeTables`*).
+    (*using `utils.datasets.pandas.mergeTables`*).
 
     Saves resulting Pandas table to file (*if provided path is not `None`*)
     or just returns it.

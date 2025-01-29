@@ -31,7 +31,7 @@ logger.debug("Some debug message")
 logger.info("Some regular message")
 ```
 
-With `phab.utils.logs.debugMode` is set to `False` the output will be:
+With `utils.logs.debugMode` set to `False` the output will be:
 
 ```
 [INFO] Some regular message

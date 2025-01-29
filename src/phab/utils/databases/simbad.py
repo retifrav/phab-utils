@@ -170,8 +170,8 @@ def getStellarParameter(
     """
     A convenience function for querying SIMBAD for a stellar parameter:
 
-    1. Finds SIMBAD's object ID by the star name (*with `phab.utils.databases.simbad.getObjectID`*);
-    2. Queries for a stellar parameter by that object ID (*with `phab.utils.databases.tap.getStellarParameterFromSimbadByObjectID`*).
+    1. Finds SIMBAD's object ID by the star name (*with `utils.databases.simbad.getObjectID`*);
+    2. Queries for a stellar parameter by that object ID (*with `utils.databases.tap.getStellarParameterFromSimbadByObjectID`*).
 
     Example:
 

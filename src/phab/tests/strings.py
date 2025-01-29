@@ -1,6 +1,6 @@
 import pytest
 
-from phab.utils.strings import extraction, conversion
+from utils.strings import extraction, conversion
 from . import somethingThatDoesntExist
 
 

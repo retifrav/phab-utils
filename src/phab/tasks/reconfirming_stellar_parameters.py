@@ -9,9 +9,9 @@ import numpy
 
 from typing import Optional, List, Dict
 
-from ..utils.files import pickle
-from ..utils.databases import tap
-from ..utils.databases import simbad
+from utils.files import pickle
+from utils.databases import tap
+from utils.databases import simbad
 
 
 def lookForParametersInGaia(
@@ -60,7 +60,7 @@ def lookForParametersInGaia(
     ```
 
     You might need to provide `simbadIDversion` parameter (*the `dr3` value
-    here*) if SIMBAD (`phab.utils.databases.simbad.findIdentificatorFromAnotherCatalogue`)
+    here*) if SIMBAD (`utils.databases.simbad.findIdentificatorFromAnotherCatalogue`)
     returns IDs like `DR3 2135237601028549888` and you need to get exactly
     the DR3 ones.
 

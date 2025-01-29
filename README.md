@@ -71,14 +71,24 @@ $ pip install pdoc
 $ cd /path/to/phab-utils
 $ rm -r ./documentation/_deploy/*
 
-$ PHAB_PACKAGE_VERSION=$(git rev-parse --short HEAD) pdoc ./src/phab/utility ./src/phab/tasks \
+$ PHAB_PACKAGE_VERSION=$(git rev-parse --short HEAD) pdoc ./src/phab/utils ./src/phab/tasks \
     --template-directory ./documentation/_templates/ \
-    --edit-url="phab=https://github.com/retifrav/phab-utils/blob/master/src/phab/" \
+    --edit-url="utils=https://github.com/retifrav/phab-utils/blob/master/src/phab/utils/" \
+    --edit-url="tasks=https://github.com/retifrav/phab-utils/blob/master/src/phab/tasks/" \
     --output-directory ./documentation/_deploy/
 $ cp ./documentation/{favicon.ico,phab.jpg} ./documentation/_deploy/
 ```
 
 For now it's a blunt deployment of generated HTML, but later it probably will be better to rely on GitHub Actions (*if it won't spend too much of free quota*) by customizing [this workflow](https://github.com/mitmproxy/pdoc/blob/main/.github/workflows/docs.yml).
+
+If you'd like to browse generated documentation locally, you can just open the main `index.html` from `./documentation/_deploy/` in your browser. Alternatively, you can launch a basic Python server:
+
+``` py
+$ cd ./documentation/_deploy/
+$ python -m http.server 8000
+```
+
+and open <http://localhost:8000/>.
 
 ### wiki
 
