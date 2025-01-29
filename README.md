@@ -1,6 +1,8 @@
-# uio-exoplanet-group
+# phab-utils
 
-UiO exoplanet group: data processing tools and knowledge base. Created for [Centre for Earth Evolution and Dynamics](https://mn.uio.no/ceed/) and its successor [Centre for Planetary Habitability](https://mn.uio.no/phab/english/).
+Data processing tools and knowledge base of [Centre for Earth Evolution and Dynamics](https://mn.uio.no/ceed/) and its successor [Centre for Planetary Habitability](https://mn.uio.no/phab/english/).
+
+Original project name was `uio-exoplanet-group`, which later got renamed to `phab-utils` (*on 2025-01-29*).
 
 <!-- MarkdownTOC -->
 
@@ -8,7 +10,6 @@ UiO exoplanet group: data processing tools and knowledge base. Created for [Cent
     - [From PyPI](#from-pypi)
     - [From sources](#from-sources)
         - [Building a wheel](#building-a-wheel)
-- [Modules](#modules)
 - [Data](#data)
 - [Documentation](#documentation)
     - [API](#api)
@@ -22,13 +23,15 @@ UiO exoplanet group: data processing tools and knowledge base. Created for [Cent
 ### From PyPI
 
 ``` sh
-$ pip install uio-exoplanet-group
+$ pip install phab-utils
 ```
+
+If you need an older version from the original `uio-exoplanet-group` package, those are still available [here](https://pypi.org/project/uio-exoplanet-group/#history).
 
 ### From sources
 
 ``` sh
-$ cd /path/to/uio-exoplanet-group/
+$ cd /path/to/phab-utils/
 $ pip install .
 ```
 
@@ -43,19 +46,14 @@ $ pip install -e .
 You can also build a wheel and distribute/install that instead:
 
 ``` sh
-$ cd /path/to/uio-exoplanet-group/
+$ cd /path/to/phab-utils/
 $ python -m build
-$ pip install ./dist/uio_exoplanet_group-*.whl
+$ pip install ./dist/phab_utils-*.whl
 ```
-
-## Modules
-
-- `utility` - reusable/common utility modules;
-- `tasks` - special module for performing particular tasks.
 
 ## Data
 
-Wherever you see a reference to some data files in documentation, examples, comments or anywhere else, for example some function taking a path like `./data/systems-528n.pkl`, check the [data](https://github.com/retifrav/uio-exoplanet-group/tree/master/data) folder - chances are, that file will be provided there.
+Wherever you see a reference to some data files in documentation, examples, comments or anywhere else, for example some function taking a path like `./data/systems-528n.pkl`, check the [data](https://github.com/retifrav/phab-utils/tree/master/data) folder - chances are, that file will be provided there.
 
 ## Documentation
 
@@ -63,19 +61,19 @@ There are two different pieces of documentation.
 
 ### API
 
-Located in `documentation`. This is the package API documentation, which is published [here](https://uio.decovar.dev/).
+Located in `documentation`. This is the package API documentation, which is published [here](https://phab.decovar.dev/).
 
 It is generated with [pdoc](https://pdoc.dev):
 
 ``` sh
 $ pip install pdoc
 
-$ cd /path/to/uio-exoplanet-group
+$ cd /path/to/phab-utils
 $ rm -r ./documentation/_deploy/*
 
-$ UIO_PACKAGE_VERSION=$(git rev-parse --short HEAD) pdoc ./src/uio/utility ./src/uio/tasks \
+$ PHAB_PACKAGE_VERSION=$(git rev-parse --short HEAD) pdoc ./src/phab/utility ./src/phab/tasks \
     --template-directory ./documentation/_templates/ \
-    --edit-url="uio=https://github.com/retifrav/uio-exoplanet-group/blob/master/src/uio/" \
+    --edit-url="phab=https://github.com/retifrav/phab-utils/blob/master/src/phab/" \
     --output-directory ./documentation/_deploy/
 $ cp ./documentation/{favicon.ico,phab.jpg} ./documentation/_deploy/
 ```
@@ -95,7 +93,7 @@ To run tests:
 ``` sh
 $ pip install pytest
 
-$ python -m pytest ./src/uio/tests/*[^_*].py
-$ python -m pytest ./src/uio/tests/databases.py
-$ python -m pytest ./src/uio/tests/databases.py -k "test_get_parameters_that_are_double_in_nasa"
+$ python -m pytest ./src/phab/tests/*[^_*].py
+$ python -m pytest ./src/phab/tests/databases.py
+$ python -m pytest ./src/phab/tests/databases.py -k "test_get_parameters_that_are_double_in_nasa"
 ```

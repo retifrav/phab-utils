@@ -2,11 +2,11 @@
 
 {% set rootprefix = "../" * module.modulename.count(".") if module else "" %}
 
-{% block title %}UiO exoplanet group{% endblock %}
+{% block title %}PHAB{% endblock %}
 
 {% block nav %}
-    <a href="https://uio.decovar.dev/">
-        <img src="{{ rootprefix }}./phab.jpg" class="logo" alt="UiO exoplanet group logo">
+    <a href="https://phab.decovar.dev/">
+        <img src="{{ rootprefix }}./phab.jpg" class="logo" alt="PHAB logo">
     </a>
 
     <input type="search" placeholder="Search" role="searchbox" aria-label="search"
@@ -14,12 +14,12 @@
 
     <h2 style="margin-top:15px;">Modules</h2>
     <ul>
-        <li><a href="./uio/utility.html">utility</a></li>
-        <li><a href="./uio/tasks.html">tasks</a></li>
+        <li><a href="./phab/utils.html">utils</a></li>
+        <li><a href="./phab/tasks.html">tasks</a></li>
     </ul>
 
     <footer>
-        <span>Package version: <a href='https://github.com/retifrav/uio-exoplanet-group/tree/{{ env["UIO_PACKAGE_VERSION"] | default("unknown") }}'>{{ env["UIO_PACKAGE_VERSION"] | default("unknown") }}</a></span><br>
+        <span>Package version: <a href='https://github.com/retifrav/phab-utils/tree/{{ env["PHAB_PACKAGE_VERSION"] | default("unknown") }}'>{{ env["PHAB_PACKAGE_VERSION"] | default("unknown") }}</a></span><br>
         <span>Generated with <a href="https://pdoc.dev/">pdoc</a></span>
     </footer>
 {% endblock %}
@@ -28,9 +28,9 @@
     <main class="pdoc">
 
     {% filter to_html %}
-# UiO exoplanet group
+# PHAB
 
-UiO exoplanet group: data processing tools and knowledge base. Created for [Centre for Earth Evolution and Dynamics](https://mn.uio.no/ceed/) and its successor [Centre for Planetary Habitability](https://mn.uio.no/phab/english/).
+Data processing tools and knowledge base of [Centre for Earth Evolution and Dynamics](https://mn.uio.no/ceed/) and its successor [Centre for Planetary Habitability](https://mn.uio.no/phab/english/).
 
 - [Source code](#source-code)
 - [Installing](#installing)
@@ -41,20 +41,20 @@ UiO exoplanet group: data processing tools and knowledge base. Created for [Cent
 
 ## Source code
 
-The package source code repository is [here](https://github.com/retifrav/uio-exoplanet-group).
+The package source code repository is [here](https://github.com/retifrav/phab-utils).
 
 ## Installing
 
 ### From PyPI
 
 ``` sh
-$ pip install uio-exoplanet-group
+$ pip install phab-utils
 ```
 
 ### From sources
 
 ``` sh
-$ cd /path/to/uio-exoplanet-group/
+$ cd /path/to/phab-utils/
 $ pip install .
 ```
 
@@ -64,14 +64,9 @@ Add an `-e` argument, if you'd like to automatically update your locally install
 $ pip install -e .
 ```
 
-## Modules
-
-- `utility` - reusable/common utility modules;
-- `tasks` - special module for performing particular tasks.
-
 ## Data
 
-Wherever you see a reference to some data files in documentation, examples, comments or anywhere else, for example some function taking a path like `./data/systems-528n.pkl`, check the [data](https://github.com/retifrav/uio-exoplanet-group/tree/master/data) folder - chances are, that file will be provided there.
+Wherever you see a reference to some data files in documentation, examples, comments or anywhere else, for example some function taking a path like `./data/systems-528n.pkl`, check the [data](https://github.com/retifrav/phab-utils/tree/master/data) folder - chances are, that file will be provided there.
     {% endfilter %}
 
     </main>

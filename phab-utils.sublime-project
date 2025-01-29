@@ -1,0 +1,20 @@
+{
+    "folders":
+    [
+        {
+            "path": ".",
+            "folder_exclude_patterns": [
+                "*.egg-info",
+                ".github",
+                ".mypy_cache",
+                ".pytest_cache",
+                "__pycache__",
+                "data"
+            ],
+            "file_exclude_patterns": [
+                "*.sublime-project",
+                "disabled.gitattributes"
+            ]
+        }
+    ]
+}

@@ -23,8 +23,8 @@
     {% endblock %}
 
     {% block nav_title %}
-        <a href="https://uio.decovar.dev">
-            <img src="{{ rootprefix }}./phab.jpg" class="logo" alt="UiO exoplanet group logo">
+        <a href="https://phab.decovar.dev">
+            <img src="{{ rootprefix }}./phab.jpg" class="logo" alt="PHAB logo">
         </a>
     {% endblock %}
 
@@ -64,7 +64,7 @@
 
     {% block nav_footer %}
         <footer>
-            <span>Package version: <a href='https://github.com/retifrav/uio-exoplanet-group/tree/{{ env["UIO_PACKAGE_VERSION"] | default("unknown") }}'>{{ env["UIO_PACKAGE_VERSION"] | default("unknown") }}</a></span><br>
+            <span>Package version: <a href='https://github.com/retifrav/phab-utils/tree/{{ env["PHAB_PACKAGE_VERSION"] | default("unknown") }}'>{{ env["PHAB_PACKAGE_VERSION"] | default("unknown") }}</a></span><br>
             <span>Generated with <a href="https://pdoc.dev/">pdoc</a></span>
         </footer>
     {% endblock %}
