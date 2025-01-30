@@ -4,6 +4,7 @@ astronomical database.
 """
 
 from astroquery.simbad import Simbad
+from astroquery import __version__ as astroqueryVersion
 import re
 
 from typing import Optional, Any
@@ -135,7 +136,39 @@ def getObjectID(starName: str) -> Optional[int]:
         else:
             logger.debug(f"Checking SIMBAD IDs for [{starName}]:")
             for id in ids:
-                idValue = id["ID"]
+                idValue: Optional[str] = None
+                # before astroquery version 0.4.8 this row was
+                # with an upper-cased `ID` column key, but starting
+                # with version 0.4.8 it is now lower-cased `id`
+                #
+                # https://github.com/astropy/astropy/issues/17695
+                try:  # or compare `astroqueryVersion` with `0.4.7`
+                    idValue = id["ID"]
+                except KeyError:
+                    logger.warning(
+                        " ".join((
+                            "For some reason there is no upper-cased `ID` key",
+                            "in this row, will try with lower-cased `id` key"
+                        ))
+                    )
+                    try:
+                        idValue = id["id"]
+                    except KeyError:
+                        logger.error(
+                            "This row has no lower-cased `id` key either"
+                        )
+                        if len(id.colnames) > 0:
+                            logger.debug(
+                                " ".join((
+                                    "Here are all the other keys in this row:",
+                                    ", ".join(id.colnames)
+                                ))
+                            )
+                        else:
+                            logger.debug("There are no other keys in this row")
+                if idValue is None:
+                    continue
+
                 logger.debug(f"- {idValue}")
                 if idValue == starName:
                     logger.debug(

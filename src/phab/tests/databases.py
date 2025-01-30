@@ -4,6 +4,8 @@ from utils.databases import tap, lightcurves, simbad
 from . import somethingThatDoesntExist
 
 from pyvo.dal.exceptions import DALQueryError
+from contextlib import nullcontext
+from packaging.version import Version
 
 from typing import Tuple
 
@@ -151,7 +153,13 @@ def test_get_object_id(somethingThatDoesntExist: str) -> None:
     objectID = simbad.getObjectID("A2 146")
     assert objectID == 3308165
     # an object that does not exist
-    with pytest.warns(Warning):  # should be BlankResponseWarning
+    #
+    # from version 0.4.8 astroquery no longer outputs BlankResponseWarning
+    with (
+        nullcontext()
+        if Version(simbad.astroqueryVersion) > Version("0.4.7")
+        else pytest.warns(Warning)  # should be BlankResponseWarning
+    ):
         objectID = simbad.getObjectID(f"A2 146 {somethingThatDoesntExist}")
         assert objectID is None, \
             " ".join((
@@ -222,7 +230,11 @@ def test_get_stellar_parameter(
     assert len(rez) == 2
     assert isinstance(rez[1], str)
     # parameter of an object that does not exist
-    with pytest.warns(Warning):  # should be BlankResponseWarning
+    with (
+        nullcontext()
+        if Version(simbad.astroqueryVersion) > Version("0.4.7")
+        else pytest.warns(Warning)  # should be BlankResponseWarning
+    ):
         rez = simbad.getStellarParameter(
             somethingThatDoesntExist,
             "mesVar",
