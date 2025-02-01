@@ -92,9 +92,17 @@ def getObjectID(starName: str) -> Optional[int]:
 
     ``` py
     from phab.utils.databases import simbad
+    from typing import Optional
 
-    oid = simbad.getObjectID("A2 146")
-    print(oid)
+    oid: Optional[int] = None
+    try:
+        oid = simbad.getObjectID("A2 146")
+    except KeyError as ex:
+        print(f"Something wrong with querying SIMBAD. {repr(ex)}")
+    if oid is not None:
+        print(f"Object ID: {oid}")
+    else:
+        print("No results")
     ```
     """
     oid: Optional[int] = None
@@ -135,41 +143,50 @@ def getObjectID(starName: str) -> Optional[int]:
             )
         else:
             logger.debug(f"Checking SIMBAD IDs for [{starName}]:")
-            for id in ids:
-                idValue: Optional[str] = None
-                # before astroquery version 0.4.8 this row was
-                # with an upper-cased `ID` column key, but starting
-                # with version 0.4.8 it is now lower-cased `id`
-                #
-                # https://github.com/astropy/astropy/issues/17695
-                try:  # or compare `astroqueryVersion` with `0.4.7`
-                    idValue = id["ID"]
-                except KeyError:
-                    logger.warning(
-                        " ".join((
-                            "For some reason there is no upper-cased `ID` key",
-                            "in this row, will try with lower-cased `id` key"
-                        ))
-                    )
-                    try:
-                        idValue = id["id"]
-                    except KeyError:
-                        logger.error(
-                            "This row has no lower-cased `id` key either"
-                        )
-                        if len(id.colnames) > 0:
-                            logger.debug(
-                                " ".join((
-                                    "Here are all the other keys in this row:",
-                                    ", ".join(id.colnames)
-                                ))
-                            )
-                        else:
-                            logger.debug("There are no other keys in this row")
-                if idValue is None:
-                    continue
 
+            # before astroquery version 0.4.8 this table had
+            # an upper-cased `ID` column key, but starting
+            # with version 0.4.8 it is now lower-cased `id`
+            #
+            # https://github.com/astropy/astropy/issues/17695
+            idColumnKey: str = "ID"
+            # or compare `astroquery.__version__` with `0.4.7`
+            if idColumnKey not in ids.colnames:
+                logger.warning(
+                    " ".join((
+                        "There is no upper-cased [ID] key",
+                        "in the resulting table, will try",
+                        "with lower-cased [id] key"
+                    ))
+                )
+                idColumnKey = idColumnKey.lower()  # "id"
+                if idColumnKey not in ids.colnames:
+                    errorMsg = " ".join((
+                        "SIMBAD results table has neither [ID]",
+                        "nor [id] column"
+                    ))
+                    logger.error(errorMsg)
+                    if len(ids.colnames) > 0:
+                        logger.debug(
+                            " ".join((
+                                "Here are all the columns/keys",
+                                "in this table:",
+                                ", ".join(ids.colnames)
+                            ))
+                        )
+                    else:
+                        logger.debug(
+                            " ".join((
+                                "There are no columns/keys",
+                                "in this table at all"
+                            ))
+                        )
+                    raise KeyError(errorMsg)
+
+            for id in ids:
+                idValue: str = id[idColumnKey]
                 logger.debug(f"- {idValue}")
+
                 if idValue == starName:
                     logger.debug(
                         f"...the [{idValue}] has already been tested, skipping"
@@ -187,8 +204,8 @@ def getObjectID(starName: str) -> Optional[int]:
                     oid = rez[0]["oid"]
                     logger.debug(
                         " ".join((
-                            f"The [{idValue}] is the main ID for [{starName}],",
-                            f"SIMBAD object ID is: {oid}"
+                            f"The [{idValue}] is the main ID for",
+                            f"[{starName}], SIMBAD object ID is: {oid}"
                         ))
                     )
                     break
