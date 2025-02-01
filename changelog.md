@@ -18,11 +18,19 @@
 
 ## 0.8.0
 
-Released on `?`.
+Released on `2025-02-01`.
 
+- the package has been renamed from `uio-exoplanet-group` to `phab-utils`
+    + `utility` namespace is now `utils`, and in general you will need to adapt your imports from `uio.utility.SOMETHING` to `phab.utils.SOMETHING`
+    + new wheels
+        * published in PyPI under the [new name](https://pypi.org/project/phab-utils/)
+        * previous versions are still available in PyPI under the [old name](https://pypi.org/project/uio-exoplanet-group/#history)
 - `math` - new module for mathematics
     + `statistics`
         * `findOutliers()` - marking outliers in an array
+- `databases`
+    + `simbad`
+        * `getObjectID` - workaround for [breaking API](https://github.com/astropy/astropy/issues/17695) in Astroquery version `0.4.8`
 
 ## 0.7.0
 
