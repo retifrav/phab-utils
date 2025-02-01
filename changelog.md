@@ -2,6 +2,7 @@
 
 <!-- MarkdownTOC -->
 
+- [0.8.1](#081)
 - [0.8.0](#080)
 - [0.7.0](#070)
 - [0.6.0](#060)
@@ -15,6 +16,15 @@
 - [0.1.0](#010)
 
 <!-- /MarkdownTOC -->
+
+## 0.8.1
+
+Released on `2025-02-01`.
+
+- fixed incorrect namespacing of the package, was missing `find_namespace:` directive in the manifest, which made imports fail
+    + that affected users who install it from PyPI wheel with `pip install phab-utils`
+    + installing from sources with `pip install -e .` doesn't seem to be affected
+    + the version is increased because it is impossible to re-publish the same version to PyPI
 
 ## 0.8.0
 
