@@ -249,7 +249,7 @@ or, which depends on a particular server:
 #SBATCH --partition=accel
 ```
 
-The point is that different job types have different cost/pricing.
+The point is that different job types have different cost/pricing and different "walltime" limits (*for how long can your job run before it gets killed by scheduler*). So if your tasks are running for longer than 4 days then you'll just have to use the `accel` type (*and set `--gpus=0` if you don't need GPU*), no matter the cost/price; but if your tasks need to run for longer than 7 days, then it isn't clear what one should do in that case.
 
 ## Installing software
 
