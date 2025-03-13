@@ -128,8 +128,8 @@ def findOutliers(
 
     tableFinite = tbl[tbl["finite"] == True].iloc[:, 0]
 
-    med = numpy.median(tableFinite.values)
-    sig = 1.48 * numpy.median(numpy.abs(tableFinite - med))
+    med = numpy.median(tableFinite.values)  # type:ignore[arg-type] # ya hz
+    sig = 1.48 * numpy.median(numpy.abs(tableFinite - med))  # type:ignore[operator] # ya hz
 
     for i, v in tableFinite.items():
         if v > med - sigma * sig:

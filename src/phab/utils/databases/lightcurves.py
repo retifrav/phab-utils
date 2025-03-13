@@ -151,7 +151,8 @@ def getLightCurveStats(
         ]
         logger.debug(tbl)
 
-        for author, group in (tbl.groupby("author")):
+        author: str  # for mypy, but even then it is not happy with something else
+        for author, group in (tbl.groupby("author")):  # type:ignore[assignment] # ya hz
             if author not in authors:
                 raise ValueError(f"Unknown author: {author}")
             mission = authors[author]["mission"]
@@ -163,7 +164,7 @@ def getLightCurveStats(
                     cadenceValues: List[int] = (
                         authors[author]["cadence"][cadence]
                     )
-                    cadences: pandas.DataFrame = None
+                    cadences: pandas.DataFrame
                     if len(cadenceValues) > 0:  # take only specified values
                         # perhaps both of these should be normalized to int
                         cadences = group.query("exptime == @cadenceValues")

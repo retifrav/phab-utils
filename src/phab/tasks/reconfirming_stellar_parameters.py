@@ -75,7 +75,11 @@ def lookForParametersInGaia(
 
     stars: Dict[str, Optional[str]] = {}
     for star in starNames:
-        oid = simbad.findIdentificatorFromAnotherCatalogue(star, "gaia", simbadIDversion)
+        oid = simbad.findIdentificatorFromAnotherCatalogue(
+            star,
+            "gaia",
+            simbadIDversion
+        )
         if oid is None:
             print(f"- [WARNING] did not GAIA ID for [{star}]")
         else:

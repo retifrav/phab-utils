@@ -156,7 +156,7 @@ def test_get_object_id(somethingThatDoesntExist: str) -> None:
     #
     # from version 0.4.8 astroquery no longer outputs BlankResponseWarning
     with (
-        nullcontext()
+        nullcontext()  # type:ignore[attr-defined] # ya hz
         if Version(simbad.astroqueryVersion) > Version("0.4.7")
         else pytest.warns(Warning)  # should be BlankResponseWarning
     ):
@@ -231,7 +231,7 @@ def test_get_stellar_parameter(
     assert isinstance(rez[1], str)
     # parameter of an object that does not exist
     with (
-        nullcontext()
+        nullcontext()  # type:ignore[attr-defined] # ya hz
         if Version(simbad.astroqueryVersion) > Version("0.4.7")
         else pytest.warns(Warning)  # should be BlankResponseWarning
     ):

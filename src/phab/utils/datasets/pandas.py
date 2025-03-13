@@ -104,7 +104,7 @@ def deduplicateTable(
     ```
     """
     duplicateRows = tbl.duplicated()
-    duplicateRows = duplicateRows[duplicateRows].index
+    duplicateRows = duplicateRows[duplicateRows].index  # type:ignore[assignment] # pizdit
 
     logger.debug(f"Unique rows count: {len(tbl) - len(duplicateRows)}")
     logger.debug(f"Duplicate rows count: {len(duplicateRows)}")

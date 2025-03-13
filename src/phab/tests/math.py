@@ -1,5 +1,6 @@
 import pytest
 import numpy
+import pandas
 
 from utils.math import statistics
 
@@ -11,10 +12,10 @@ from utils.math import statistics
         [4, 111, 4, 3, 4, 5, numpy.nan, 4, 2, 4, numpy.inf, 1, 1e14, 3, 3, 4, 102, 3, 2, 4]
     ]
 )
-def test_find_outliers(srs) -> None:
+def test_find_outliers(srs: pandas.Series) -> None:
     markedOutliers = statistics.findOutliers(srs, 3, True, 3)
     assert numpy.array_equal(
-        markedOutliers.values,
+        markedOutliers.values,  # type:ignore[arg-type] # ya hz
         numpy.array(
             [
                 True,
@@ -43,7 +44,7 @@ def test_find_outliers(srs) -> None:
 
     markedOutliers = statistics.findOutliers(srs, 3, False, 3)
     assert numpy.array_equal(
-        markedOutliers.values,
+        markedOutliers.values,  # type:ignore[arg-type] # ya hz
         numpy.array(
             [
                 False,
