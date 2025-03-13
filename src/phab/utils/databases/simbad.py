@@ -56,8 +56,48 @@ def findIdentificatorFromAnotherCatalogue(
         )
     else:
         logger.debug(f"Checking SIMBAD IDs for [{starName}]:")
+
+        # before astroquery version 0.4.8 this table had
+        # an upper-cased `ID` column key, but starting
+        # with version 0.4.8 it is now lower-cased `id`
+        #
+        # https://github.com/astropy/astropy/issues/17695
+        idColumnKey: str = "ID"
+        # or compare `astroquery.__version__` with `0.4.7`
+        if idColumnKey not in otherIDs.colnames:
+            logger.debug(
+                " ".join((
+                    "There is no upper-cased [ID] key",
+                    "in the resulting table, will try",
+                    "with lower-cased [id] key"
+                ))
+            )
+            idColumnKey = idColumnKey.lower()  # "id"
+            if idColumnKey not in otherIDs.colnames:
+                errorMsg = " ".join((
+                    "SIMBAD results table has neither [ID]",
+                    "nor [id] column"
+                ))
+                logger.error(errorMsg)
+                if len(otherIDs.colnames) > 0:
+                    logger.debug(
+                        " ".join((
+                            "Here are all the columns/keys",
+                            "in this table:",
+                            ", ".join(otherIDs.colnames)
+                        ))
+                    )
+                else:
+                    logger.debug(
+                        " ".join((
+                            "There are no columns/keys",
+                            "in this table at all"
+                        ))
+                    )
+                raise KeyError(errorMsg)
+
         for oid in otherIDs:
-            idCandidate: str = oid["ID"]
+            idCandidate: str = oid[idColumnKey]
             logger.debug(f"- {idCandidate}")
             if otherIDname.lower() in idCandidate.lower():
                 idToLookFor = (
@@ -152,7 +192,7 @@ def getObjectID(starName: str) -> Optional[int]:
             idColumnKey: str = "ID"
             # or compare `astroquery.__version__` with `0.4.7`
             if idColumnKey not in ids.colnames:
-                logger.warning(
+                logger.debug(
                     " ".join((
                         "There is no upper-cased [ID] key",
                         "in the resulting table, will try",
@@ -220,8 +260,10 @@ def getStellarParameter(
     """
     A convenience function for querying SIMBAD for a stellar parameter:
 
-    1. Finds SIMBAD's object ID by the star name (*with `utils.databases.simbad.getObjectID`*);
-    2. Queries for a stellar parameter by that object ID (*with `utils.databases.tap.getStellarParameterFromSimbadByObjectID`*).
+    1. Finds SIMBAD's object ID by the star name
+    (*with `utils.databases.simbad.getObjectID`*);
+    2. Queries for a stellar parameter by that object ID
+    (*with `utils.databases.tap.getStellarParameterFromSimbadByObjectID`*).
 
     Example:
 

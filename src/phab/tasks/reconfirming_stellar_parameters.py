@@ -9,9 +9,9 @@ import numpy
 
 from typing import Optional, List, Dict
 
-from utils.files import pickle
-from utils.databases import tap
-from utils.databases import simbad
+from ..utils.files import pickle
+from ..utils.databases import tap
+from ..utils.databases import simbad
 
 
 def lookForParametersInGaia(
@@ -23,7 +23,8 @@ def lookForParametersInGaia(
     """
     Looking for specified parameters in GAIA database:
 
-    1. Opens a pickle file with original [Pandas](https://pandas.pydata.org) table;
+    1. Opens a pickle file with original [Pandas](https://pandas.pydata.org)
+    table;
     2. Extracts unique list of star names;
     3. Gets their GAIA IDs from Simbad database;
     4. Queries GAIA database for given parameters;
@@ -86,7 +87,7 @@ def lookForParametersInGaia(
     print("\nLooking for parameters in GAIA...\n")
 
     for parameter in adqlParameters:
-        originalTable[parameter] = numpy.array(numpy.NaN, dtype=float)
+        originalTable[parameter] = numpy.array(numpy.nan, dtype=float)
 
     foundCnt = 0
     for star in stars:
