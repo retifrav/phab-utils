@@ -2,6 +2,7 @@
 
 <!-- MarkdownTOC -->
 
+- [0.8.2](#082)
 - [0.8.1](#081)
 - [0.8.0](#080)
 - [0.7.0](#070)
@@ -16,6 +17,19 @@
 - [0.1.0](#010)
 
 <!-- /MarkdownTOC -->
+
+## 0.8.2
+
+Released on `2025-03-16`.
+
+- `tasks`
+    + `reconfirming_stellar_parameters`
+        * fixed wrong imports (*with a workaround for pdoc, as it expects different imports for some reason*)
+        * `lookForParametersInGaia`
+            - replaced `numpy.NaN` with `numpy.nan`, as the former was removed from NumPy 2.0
+- `databases`
+    + `simbad`
+        * `findIdentificatorFromAnotherCatalogue` - one more of the same workaround for [breaking API](https://github.com/astropy/astropy/issues/17695) in Astroquery version `0.4.8`
 
 ## 0.8.1
 
