@@ -8,6 +8,7 @@ import pandas
 from typing import Optional, List, Union
 
 from ..datasets import pandas as pnd
+from ..files import file as fl
 from ..logs.log import logger
 
 
@@ -27,16 +28,13 @@ def openPickleAsPandasTable(
     #print(pnd.head(15))
     ```
     """
-    filePath: pathlib.Path = pathlib.Path()
-    if isinstance(pickleFilePath, str):
-        filePath = pathlib.Path(pickleFilePath)
+    pickleFile: Optional[pathlib.Path] = fl.fileExists(pickleFilePath)
+    if pickleFile is None:
+        raise ValueError(
+            f"Provided path to [{pickleFilePath}] seems to be wrong"
+        )
     else:
-        filePath = pickleFilePath
-    if not filePath.exists():
-        raise ValueError(f"The path [{filePath}] does not exist")
-    if not filePath.is_file():
-        raise ValueError(f"The path [{filePath}] is not a file")
-    return pandas.read_pickle(filePath)
+        return pandas.read_pickle(pickleFile)
 
 
 def savePandasTableAsPickle(
@@ -97,18 +95,14 @@ def mergePickles(
     #print(tbl.head(15))
     ```
     """
-    inputPath: pathlib.Path = pathlib.Path()
-    if isinstance(picklesToMergePath, str):
-        inputPath = pathlib.Path(picklesToMergePath)
+    picklesToMerge = None
+    inputPath: Optional[pathlib.Path] = fl.directoryExists(picklesToMergePath)
+    if inputPath is None:
+        raise ValueError(
+            f"Provided path to [{picklesToMergePath}] seems to be wrong"
+        )
     else:
-        inputPath = picklesToMergePath
-
-    if not inputPath.exists():
-        raise ValueError(f"The path [{inputPath}] does not exist")
-    if not inputPath.is_dir():
-        raise ValueError(f"The [{inputPath}] is not a folder")
-
-    picklesToMerge = list(inputPath.glob("**/*.pkl"))
+        picklesToMerge = list(inputPath.glob("**/*.pkl"))
 
     frames = []
 

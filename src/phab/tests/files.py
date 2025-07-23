@@ -5,19 +5,51 @@ import pathlib
 import pandas
 import numpy
 
-from utils.files import pickle
+from utils.files import file as fl, pickle
 from . import somethingThatDoesntExist
+
+
+def test_directory_exists() -> None:
+    # proper existing directory
+    dir1 = fl.directoryExists("./data/")
+    assert dir1 is not None
+
+    # path that does not exist
+    dir2 = fl.directoryExists(f"./data/{somethingThatDoesntExist}")
+    assert dir2 is None
+
+    # path that is a file
+    dir3 = fl.directoryExists(f"./data/systems-528n.pkl")
+    assert dir3 is None
+
+
+def test_file_exists() -> None:
+    # proper existing file
+    file1 = fl.fileExists("./data/systems-528n.pkl")
+    assert file1 is not None
+
+    # path that does not exist
+    file2 = fl.fileExists(f"./data/{somethingThatDoesntExist}")
+    assert file2 is None
+
+    # path that is a directory
+    file3 = fl.fileExists(f"./data/")
+    assert file3 is None
 
 
 def test_open_pickle_as_pandas_table_fail(
     somethingThatDoesntExist: str
 ) -> None:
     # openning a non-existent path
-    with pytest.raises(ValueError, match=r"^The path \[.*\] does not exist$"):
+    with pytest.raises(
+        ValueError,
+        match=r"^Provided path to \[.*\] seems to be wrong$"
+    ):
         tbl = pickle.openPickleAsPandasTable(somethingThatDoesntExist)
     # openning a folder instead of a file
-    with pytest.raises(ValueError, match=r"^The path \[.*\] is not a file$"):
-        tbl = pickle.openPickleAsPandasTable(".")
+    # (no longer raises this one)
+    # with pytest.raises(ValueError, match=r"^The path \[.*\] is not a file$"):
+    #     tbl = pickle.openPickleAsPandasTable(".")
 
 
 def test_open_pickle_as_pandas_table() -> None:

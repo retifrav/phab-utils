@@ -2,6 +2,7 @@
 
 <!-- MarkdownTOC -->
 
+- [0.9.0](#090)
 - [0.8.2](#082)
 - [0.8.1](#081)
 - [0.8.0](#080)
@@ -18,18 +19,29 @@
 
 <!-- /MarkdownTOC -->
 
+## 0.9.0
+
+Released on `?`.
+
+- `files`
+    + `file` - new module for common file operations
+        * `directoryExists()` - checking that the provided path exists and is a directory
+        * `fileExists()` - checking that the provided path exists and is a file
+    + `pickle`
+        * using `directoryExists()` and `fileExists()` for checking the directories/files paths
+
 ## 0.8.2
 
 Released on `2025-03-16`.
 
 - `tasks`
-    + `reconfirming_stellar_parameters`
+    + `reconfirming_stellar_parameters()`
         * fixed wrong imports (*with a workaround for pdoc, as it expects different imports for some reason*)
-        * `lookForParametersInGaia`
+        * `lookForParametersInGaia()`
             - replaced `numpy.NaN` with `numpy.nan`, as the former was removed from NumPy 2.0
 - `databases`
     + `simbad`
-        * `findIdentificatorFromAnotherCatalogue` - one more of the same workaround for [breaking API](https://github.com/astropy/astropy/issues/17695) in Astroquery version `0.4.8`
+        * `findIdentificatorFromAnotherCatalogue()` - one more of the same workaround for [breaking API](https://github.com/astropy/astropy/issues/17695) in Astroquery version `0.4.8`
 
 ## 0.8.1
 
@@ -54,7 +66,7 @@ Released on `2025-02-01`.
         * `findOutliers()` - marking outliers in an array
 - `databases`
     + `simbad`
-        * `getObjectID` - workaround for [breaking API](https://github.com/astropy/astropy/issues/17695) in Astroquery version `0.4.8`
+        * `getObjectID()` - workaround for [breaking API](https://github.com/astropy/astropy/issues/17695) in Astroquery version `0.4.8`
 
 ## 0.7.0
 
@@ -77,7 +89,7 @@ Released on `2024-08-31`.
 
 - `databases`
     + `lightcurves`
-        * `getLightCurveStats`
+        * `getLightCurveStats()`
             - cadence can have more than one value, so it now accepts a list instead of just one value (*and an empty list would mean that any value is good*)
             - detailed results format has changed, now it also includes the cadence value per sector
     + `simbad` and `tap` - querying for a parameter in SIMBAD also returns its bibliographic code, so now the return type for the following functions is `tuple[Any, str]`:
