@@ -3,11 +3,16 @@ Getting light curves data.
 """
 
 import lightkurve
+from astropy.table import Table
 import pandas
+from pandera import pandas as pandera
+import numpy
+import pathlib
 import re
 
-from typing import Optional, Dict, List, Pattern
+from typing import Optional, Dict, List, Pattern, Literal
 
+from ..files import file as fl
 from ..logs.log import logger
 
 # apparently, one cannot set long/short threshold,
@@ -71,6 +76,20 @@ missionSectorRegExes: Dict[str, Pattern] = {
 }
 """
 Dictionary of regular expressions for extracting sectors.
+"""
+
+lightCurveFluxTableSchema = pandera.DataFrameSchema(
+    {
+        "time": pandera.Column(numpy.float64),
+        "flux": pandera.Column(numpy.float32, nullable=True),
+        "fluxError": pandera.Column(numpy.float32, nullable=True)
+    },
+    index=pandera.Index(int, unique=True),
+    strict=True,  # only specified columns are allowed
+    coerce=False  # do not cast other types to the specified one
+)
+"""
+Table schema for light curve fluxes.
 """
 
 
@@ -295,3 +314,178 @@ def getLightCurveIDs(
             priorityThreshold += 1
 
     return lightCurveIDs
+
+
+def fitsToPandas(
+    fitsFilePath: str,
+    fitsType: Optional[Literal["tess", "kepler"]] = None,
+    qualityBitmask: Literal["none", "default", "hard", "hardest"] = "default",
+    dropNanTimes: bool = True,
+    convertTimesToSeconds: bool = False
+) -> pandas.DataFrame:
+    """
+    Open a generic light curves [FITS](https://en.wikipedia.org/wiki/FITS) file
+    and create a Pandas table from it. Only the fluxes, their times
+    and errors columns are taken.
+
+    Handles the big/little endians problem when converting from FITS to Pandas.
+
+    Example:
+
+    ``` py
+    from phab.utils.databases import lightcurves
+
+    pnd = lightcurves.fitsToPandas(
+        "./data/tess2019006130736-s0007-0000000266744225-0131-s_lc.fits",
+        fitsType="tess",
+        qualityBitmask="default",
+        dropNanTimes=True,
+        convertTimesToSeconds=True
+    )
+
+    #print(pnd)
+    ```
+    """
+    lc = None
+    fitsFile: Optional[pathlib.Path] = fl.fileExists(fitsFilePath)
+    if fitsFile is None:
+        raise ValueError(
+            f"Provided path to [{fitsFilePath}] seems to be wrong"
+        )
+    else:
+        lc = Table.read(fitsFile)
+
+    # exclude values which do not satisfy the required quality
+    if fitsType is not None:
+        msk = None
+        if fitsType == "tess":
+            msk = lightkurve.utils.TessQualityFlags.create_quality_mask(
+                quality_array=lc["QUALITY"],
+                bitmask=qualityBitmask
+            )
+        elif fitsType == "kepler":
+            msk = lightkurve.utils.KeplerQualityFlags.create_quality_mask(
+                quality_array=lc["QUALITY"],
+                bitmask=qualityBitmask
+            )
+        else:
+            print(
+                " ".join((
+                    "[WARNING] Unknown FITS type, don't know",
+                    "which quality mask to use"
+                ))
+            )
+        lc = lc[msk]
+
+    # FITS stores data in big-endian, but pandas works with little-endian,
+    # so the byte order needs to be swapped
+    # https://stackoverflow.com/a/30284033/1688203
+    narr = numpy.array(lc).byteswap().newbyteorder()
+
+    # astropy.time does not(?) support NaN
+    if dropNanTimes:
+        nantimes = numpy.isnan(narr["TIME"].data)
+        if numpy.any(nantimes):
+            print(
+                " ".join((
+                    f"[DEBUG] {numpy.sum(nantimes)} rows were excluded,",
+                    "because their time values are NaN"
+                ))
+            )
+        narr = narr[~nantimes]
+
+    # apparently, one cannot just take columns from `lc`/`narr` directly,
+    # hence this intermediate table
+    pndraw = pandas.DataFrame(narr)
+    logger.debug(f"Light curve table columns: {pndraw.columns}")
+
+    flux = pandas.DataFrame(
+        columns=[
+            "time",
+            "flux",
+            "fluxError"
+        ]
+    )
+    flux["time"] = pndraw["TIME"]
+    flux["flux"] = pndraw["PDCSAP_FLUX"]
+    flux["fluxError"] = pndraw["PDCSAP_FLUX_ERR"]
+
+    # in case excluding NaN times right after `Table.read()` is less efficient
+    # if dropNanTimes:
+    #     flux = flux.dropna(subset=["time"])
+
+    if convertTimesToSeconds:
+        flux["time"] = flux["time"] * 24 * 60 * 60
+
+    if dropNanTimes:
+        lightCurveFluxTableSchema.validate(flux)
+    else:
+        lightCurveFluxTableSchema.update_column(
+            "time",
+            dtype=numpy.float64,
+            nullable=True
+        ).validate(flux)
+
+    return flux
+
+
+def lightCurveTessToPandas(
+    lightKurve: lightkurve.lightcurve.TessLightCurve,
+    convertTimesToSeconds: bool = False
+) -> pandas.DataFrame:
+    """
+    Converting a TESS light curve object to a Pandas table. In general,
+    it does almost the same thing as
+    `utils.databases.lightcurves.fitsToPandas()`,
+    but here there it uses a TESS-specific reading function, and also
+    there is no need to drop NaN times "manually" (*and fiddle with endians?*).
+
+    Example:
+
+    ``` py
+    from phab.utils.databases import lightcurves
+    import lightkurve
+
+    downloadLC: bool = False
+    lc = None
+    if downloadLC:
+        search_result = lightkurve.search_lightcurve(
+            "Karmn J07446+035",
+            author="SPOC",
+            cadence="short"
+        )
+        lc = search_result[0].download(
+            quality_bitmask="default"
+        )
+    else:
+        lc = lightkurve.TessLightCurve.read(
+            "./data/tess2019006130736-s0007-0000000266744225-0131-s_lc.fits",
+            quality_bitmask="default"
+        )
+
+    pnd = lightcurves.lightCurveTessToPandas(lc, convertTimesToSeconds=True)
+
+    #print(pnd)
+    ```
+    """
+    pndraw = lightKurve.to_pandas()
+    logger.debug(f"Light curve table columns: {pndraw.columns}")
+
+    flux = pandas.DataFrame(
+        columns=[
+            "time",
+            "flux",
+            "fluxError"
+        ]
+    )
+
+    flux["time"] = pndraw.index
+    flux["flux"] = pndraw["pdcsap_flux"].values
+    flux["fluxError"] = pndraw["pdcsap_flux_err"].values
+
+    if convertTimesToSeconds:
+        flux["time"] = flux["time"] * 24 * 60 * 60
+
+    lightCurveFluxTableSchema.validate(flux)
+
+    return flux

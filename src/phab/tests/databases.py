@@ -6,8 +6,10 @@ from . import somethingThatDoesntExist
 from pyvo.dal.exceptions import DALQueryError
 from contextlib import nullcontext
 from packaging.version import Version
+import pandas
+import lightkurve
 
-from typing import Tuple
+from typing import Tuple, Literal
 
 
 @pytest.fixture
@@ -146,6 +148,60 @@ def test_get_light_curve_ids_fail(somethingThatDoesntExist: str) -> None:
         match=r"^Didn't find any results for this star$"
     ):
         stats = lightcurves.getLightCurveIDs(somethingThatDoesntExist)
+
+
+@pytest.mark.parametrize(
+    "downloadLC",
+    [
+        True,
+        False
+    ]
+)
+@pytest.mark.parametrize(
+    "qualityMask",
+    [
+        "none",
+        "default",
+        "hard",
+        "hardest"
+    ]
+)
+def test_fits_to_pandas_and_light_curve_tess_to_pandas(
+    downloadLC: bool,
+    qualityMask: Literal["none", "default", "hard", "hardest"]
+) -> None:
+    lc = None
+    if downloadLC:
+        search_result = lightkurve.search_lightcurve(
+            "Karmn J07446+035",
+            author="SPOC",
+            cadence="short"
+        )
+        lc = search_result[0].download(
+            quality_bitmask=qualityMask
+        )
+    else:
+        lc = lightkurve.TessLightCurve.read(
+            "./data/tess2019006130736-s0007-0000000266744225-0131-s_lc.fits",
+            quality_bitmask=qualityMask
+        )
+    pnd1 = lc.to_pandas()
+
+    pnd2 = lightcurves.fitsToPandas(
+        "./data/tess2019006130736-s0007-0000000266744225-0131-s_lc.fits",
+        fitsType="tess",
+        qualityBitmask=qualityMask,
+        dropNanTimes=True,
+        convertTimesToSeconds=False
+    )
+    assert isinstance(pnd2, pandas.DataFrame)
+    assert len(pnd2) == len(pnd1)
+    assert pnd2.iloc[0, 0] == pnd1.index[0]
+
+    pnd3 = lightcurves.lightCurveTessToPandas(lc, convertTimesToSeconds=False)
+    assert isinstance(pnd3, pandas.DataFrame)
+    assert len(pnd3) == len(pnd2)
+    assert pnd3.iloc[0, 0] == pnd2.iloc[0, 0]
 
 
 def test_get_object_id(somethingThatDoesntExist: str) -> None:

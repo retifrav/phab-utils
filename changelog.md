@@ -29,6 +29,10 @@ Released on `?`.
         * `fileExists()` - checking that the provided path exists and is a file
     + `pickle`
         * using `directoryExists()` and `fileExists()` for checking the directories/files paths
+- `databases`
+    + `lightcurves`
+        * `fitsToPandas()` - reading a generic light curves [FITS](https://en.wikipedia.org/wiki/FITS) file into a Pandas table
+        * `lightCurveTessToPandas()` - converting a TESS light curve object to a Pandas table
 
 ## 0.8.2
 

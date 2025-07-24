@@ -1,3 +1,7 @@
+"""
+Common file operations.
+"""
+
 import pathlib
 
 from ..logs.log import logger
