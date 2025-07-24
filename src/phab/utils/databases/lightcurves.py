@@ -9,6 +9,7 @@ from pandera import pandas as pandera
 import numpy
 import pathlib
 import re
+from packaging.version import Version
 
 from typing import Optional, Dict, List, Pattern, Literal
 
@@ -377,10 +378,15 @@ def fitsToPandas(
             )
         lc = lc[msk]
 
+    narr = numpy.array(lc)
     # FITS stores data in big-endian, but pandas works with little-endian,
     # so the byte order needs to be swapped
     # https://stackoverflow.com/a/30284033/1688203
-    narr = numpy.array(lc).byteswap().newbyteorder()
+    if Version(numpy.__version__) > Version("1.26.4"):
+        # if that doesn't work, then you might need to downgrade to 1.26.4
+        narr = narr.view(narr.dtype.newbyteorder()).byteswap()
+    else:
+        narr = narr.byteswap().newbyteorder()
 
     # astropy.time does not(?) support NaN
     if dropNanTimes:
