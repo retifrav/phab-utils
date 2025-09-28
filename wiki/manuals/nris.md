@@ -180,7 +180,7 @@ echo '--- Slurm statistics ---'
 $ chmod +x ~/jobs/some.sh
 ```
 
-For `saga` the `SBATCH` arguments would be different (*but actually, don't use `saga` for anything, because even though it is cheaper than others, it is also slow as shit*):
+For `saga` the `SBATCH` arguments would be different (*but actually, don't use `saga` for anything, because even though it is cheaper than others, it is also bitch-ass slow as shit, like really motherfucking slow*):
 
 ``` sh
 #SBATCH --account=YOUR-PROJECT-ID
@@ -188,6 +188,18 @@ For `saga` the `SBATCH` arguments would be different (*but actually, don't use `
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=40G
 #SBATCH --time=08:00:00
+#SBATCH --output=/cluster/home/YOUR-USERNAME/jobs/outputs/%j.log
+```
+
+or if you need the job to run longer than 7 days, then specify `bigmem`:
+
+``` sh
+#SBATCH --account=YOUR-PROJECT-ID
+#SBATCH --job-name=some
+#SBATCH --partition=bigmem
+#SBATCH --ntasks=1 --cpus-per-task=1
+#SBATCH --mem-per-cpu=55G
+#SBATCH --time=200:00:00
 #SBATCH --output=/cluster/home/YOUR-USERNAME/jobs/outputs/%j.log
 ```
 
