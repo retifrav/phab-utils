@@ -7,7 +7,7 @@ from astroquery.simbad import Simbad
 from astroquery import __version__ as astroqueryVersion
 import re
 
-from typing import Optional, Any
+from typing import Optional, Any, List
 
 from ..logs.log import logger
 from ..databases import tap
@@ -117,7 +117,11 @@ def findIdentificatorFromAnotherCatalogue(
     return otherID
 
 
-def getObjectID(starName: str) -> Optional[int]:
+def getObjectID(
+    starName: str,
+    tryWithLikeToo: bool = True,
+    problematicIdentifiersPrefixes: List[str] = ["SZ"]
+) -> Optional[int]:
     """
     Finds object identificator for
     [SIMBAD tables](http://simbad.cds.unistra.fr/simbad/tap/tapsearch.html).
@@ -127,6 +131,15 @@ def getObjectID(starName: str) -> Optional[int]:
     with the `main_id` field value (*also from the `basic` table*). It is
     not clear, how exactly SIMBAD maintainers choose the main ID for an object,
     so one has to iterate through all the identificators known to SIMBAD.
+
+    Due to the (*still unresolved?*) issues in SIMBAD/CDS, some identifiers
+    are problematic for querying with `main_id` - they return no results
+    with explicit `=` in WHERE clause, but they do return results with `LIKE`,
+    so a workaround/fallback had to be implemented for those. If you do not
+    want this fallback, then set the `tryWithLikeToo` parameter to `False`.
+    The `problematicIdentifiersPrefixes` parameter limits the list of such
+    problematic identifiers, and so far `SZ  *` pattern (*note the two spaces*)
+    seems to be one of those (*for example, `SZ  66`*).
 
     Example:
 
@@ -249,6 +262,64 @@ def getObjectID(starName: str) -> Optional[int]:
                         ))
                     )
                     break
+                else:  # fallback for known problematic identifiers
+                    # database returns identifiers like `Sz  66`,
+                    # but the actual `main_id` field will contain
+                    # all capital `SZ  *`
+                    idValueUppercased = idValue.upper()
+                    if (
+                        tryWithLikeToo
+                        and
+                        idValueUppercased.startswith(
+                            tuple(problematicIdentifiersPrefixes)
+                        )
+                        # idValueUppercased.startswith(
+                        #     # a bit of an abomination to uppercase the list
+                        #     tuple(
+                        #         list(
+                        #             map(
+                        #                 str.upper,
+                        #                 problematicIdentifiersPrefixes
+                        #             )
+                        #         )
+                        #     )
+                        # )
+                    ):
+                        logger.debug(
+                            " ".join((
+                                "Did not find SIMBAD object ID for",
+                                f"[{idValue}], but it is a known problematic",
+                                "identifier, so will try a fallback with LIKE"
+                            ))
+                        )
+                        rez = tap.queryService(
+                            tap.getServiceEndpoint("simbad"),
+                            " ".join((
+                                "SELECT TOP 1 oid",
+                                "FROM basic",
+                                f"WHERE main_id LIKE '{idValueUppercased}'"
+                            ))
+                        )
+                        if rez:
+                            oid = rez[0]["oid"]
+                            logger.debug(
+                                " ".join((
+                                    f"The [{idValueUppercased}] is the main",
+                                    f"ID for [{starName}], SIMBAD object ID",
+                                    f"is: {oid}"
+                                ))
+                            )
+                            logger.warning(
+                                " ".join((
+                                    "Managed to find the SIMBAD object ID,",
+                                    "but be aware that it was found with",
+                                    "a fallback for problematic identifiers,",
+                                    "which means using LIKE in the WHERE",
+                                    "clause, so the result is not guaranteed",
+                                    "to be correct"
+                                ))
+                            )
+                            break
     return oid
 
 

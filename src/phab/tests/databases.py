@@ -205,9 +205,13 @@ def test_fits_to_pandas_and_light_curve_tess_to_pandas(
 
 
 def test_get_object_id(somethingThatDoesntExist: str) -> None:
-    # an object that does exist
-    objectID = simbad.getObjectID("A2 146")
+    # an object that does exist and has no problems with its identifier
+    objectID = simbad.getObjectID(
+        "A2 146",
+        tryWithLikeToo=False
+    )
     assert objectID == 3308165
+
     # an object that does not exist
     #
     # from version 0.4.8 astroquery no longer outputs BlankResponseWarning
@@ -222,6 +226,27 @@ def test_get_object_id(somethingThatDoesntExist: str) -> None:
                 "There shouldn't be a known object that would contain",
                 f"\"{somethingThatDoesntExist}\" as a part of its name"
             ))
+
+        # an object that does exist but has a problematic identifier
+        objectID = simbad.getObjectID(
+            "2MASS J15392828-3446180",  # its `main_id` is `SZ  66`
+            tryWithLikeToo=False
+        )
+        assert objectID is None, \
+            " ".join((
+                "There is an object with this identifier, but without LIKE",
+                "in WHERE clause it should have not been found (unless they",
+                "have finally fixed that by now)"
+            ))
+
+    # an object that does exist but has a problematic identifier,
+    # but this time with a fallback to LIKE
+    objectID = simbad.getObjectID(
+        "2MASS J15392828-3446180",  # its `main_id` is `SZ  66`
+        tryWithLikeToo=True,
+        problematicIdentifiersPrefixes=["SZ"]
+    )
+    assert objectID == 2325762
 
 
 def test_get_stellar_parameter_from_simbad_by_main_id(

@@ -33,6 +33,8 @@ Released on `?`.
     + `lightcurves`
         * `fitsToPandas()` - reading a generic light curves [FITS](https://en.wikipedia.org/wiki/FITS) file into a Pandas table
         * `lightCurveTessToPandas()` - converting a TESS light curve object to a Pandas table
+    + `simbad`
+        * `getObjectID()` - fallback with `LIKE` in the `WHERE` clause for problematic identifiers (*such as `SZ  66`*) in `main_id` field of the `basic` table in SIMBAD/CDS database. The problem has been reported to cds-question@unistra.fr, but there was no response yet.
 
 ## 0.8.2
 
