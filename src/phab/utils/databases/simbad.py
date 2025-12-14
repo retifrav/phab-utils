@@ -141,8 +141,9 @@ def getObjectID(
     disable it by setting `fallbackToLikeInsteadOfEqual` parameter to `False`.
     Also, the `problematicIdentifiersPrefixes` parameter limits the list
     of such problematic identifiers, and so far `SZ  *` pattern (*note
-    the two spaces*) seems to be one of those (*for example, `SZ  66`*),
-    so `SZ` prefix is added to the list by default. Obviously, if you set
+    the two spaces in the original value, which isn't visible here*) seems
+    to be one of those (*for example, `SZ  66`*), so `SZ` prefix is added
+    to the list by default. Obviously, if you set
     `fallbackToLikeInsteadOfEqual` to `False`, then you don't need to care
     about this parameter at all.
 
@@ -154,7 +155,17 @@ def getObjectID(
 
     oid: Optional[int] = None
     try:
-        oid = simbad.getObjectID("A2 146")
+        # no issues with this object identifier
+        oid = simbad.getObjectID(
+            "A2 146",
+            fallbackToLikeInsteadOfEqual=False
+        )
+        # this object has a problematic identifier,
+        # so a fallback has to be used, if we still want to get its OID
+        #oid = simbad.getObjectID(
+        #    "2MASS J15392828-3446180",  # its `main_id` is `SZ  66`
+        #    fallbackToLikeInsteadOfEqual=True
+        #)
     except KeyError as ex:
         print(f"Something wrong with querying SIMBAD. {repr(ex)}")
     if oid is not None:
@@ -299,10 +310,14 @@ def getObjectID(
                         )
                         rez = tap.queryService(
                             tap.getServiceEndpoint("simbad"),
+                            # not sure if `ORDER BY update_date` is correct
+                            # here, but there is already nothing correct about
+                            # using `LIKE` instead of strict `=`, so
                             " ".join((
                                 "SELECT TOP 1 oid",
                                 "FROM basic",
-                                f"WHERE main_id LIKE '{idValueUppercased}'"
+                                f"WHERE main_id LIKE '{idValueUppercased}'",
+                                "ORDER BY update_date DESC"
                             ))
                         )
                         if rez:
@@ -321,7 +336,9 @@ def getObjectID(
                                     "a fallback for problematic identifiers,",
                                     "which means using LIKE in the WHERE",
                                     "clause, so the result is not guaranteed",
-                                    "to be correct"
+                                    "to be correct; and if you would like",
+                                    "to disable this fallback, then set",
+                                    "fallbackToLikeInsteadOfEqual to False"
                                 ))
                             )
                             break
