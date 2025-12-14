@@ -386,7 +386,8 @@ def fitsToPandas(
         # if that doesn't work, then you might need to downgrade to 1.26.4
         narr = narr.view(narr.dtype.newbyteorder()).byteswap()
     else:
-        narr = narr.byteswap().newbyteorder()
+        # have to ignore this in mypy
+        narr = narr.byteswap().newbyteorder()  # type: ignore[attr-defined]
 
     # astropy.time does not(?) support NaN
     if dropNanTimes:

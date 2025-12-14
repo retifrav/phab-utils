@@ -208,7 +208,7 @@ def test_get_object_id(somethingThatDoesntExist: str) -> None:
     # an object that does exist and has no problems with its identifier
     objectID = simbad.getObjectID(
         "A2 146",
-        tryWithLikeToo=False
+        fallbackToLikeInsteadOfEqual=False
     )
     assert objectID == 3308165
 
@@ -230,7 +230,7 @@ def test_get_object_id(somethingThatDoesntExist: str) -> None:
         # an object that does exist but has a problematic identifier
         objectID = simbad.getObjectID(
             "2MASS J15392828-3446180",  # its `main_id` is `SZ  66`
-            tryWithLikeToo=False
+            fallbackToLikeInsteadOfEqual=False
         )
         assert objectID is None, \
             " ".join((
@@ -243,7 +243,7 @@ def test_get_object_id(somethingThatDoesntExist: str) -> None:
     # but this time with a fallback to LIKE
     objectID = simbad.getObjectID(
         "2MASS J15392828-3446180",  # its `main_id` is `SZ  66`
-        tryWithLikeToo=True,
+        fallbackToLikeInsteadOfEqual=True,
         problematicIdentifiersPrefixes=["SZ"]
     )
     assert objectID == 2325762

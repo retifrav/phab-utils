@@ -119,7 +119,7 @@ def findIdentificatorFromAnotherCatalogue(
 
 def getObjectID(
     starName: str,
-    tryWithLikeToo: bool = True,
+    fallbackToLikeInsteadOfEqual: bool = True,
     problematicIdentifiersPrefixes: List[str] = ["SZ"]
 ) -> Optional[int]:
     """
@@ -132,14 +132,19 @@ def getObjectID(
     not clear, how exactly SIMBAD maintainers choose the main ID for an object,
     so one has to iterate through all the identificators known to SIMBAD.
 
-    Due to the (*still unresolved?*) issues in SIMBAD/CDS, some identifiers
+    Due to the (*still unresolved?*) issue(s) in SIMBAD/CDS, some identifiers
     are problematic for querying with `main_id` - they return no results
-    with explicit `=` in WHERE clause, but they do return results with `LIKE`,
-    so a workaround/fallback had to be implemented for those. If you do not
-    want this fallback, then set the `tryWithLikeToo` parameter to `False`.
-    The `problematicIdentifiersPrefixes` parameter limits the list of such
-    problematic identifiers, and so far `SZ  *` pattern (*note the two spaces*)
-    seems to be one of those (*for example, `SZ  66`*).
+    with explicit `=` in `WHERE` clause, but they do return results
+    with `LIKE` instead of `=`, so a workaround/fallback had to be implemented
+    for those. This workaround/fallback is enabled by default, and if you don't
+    want these potentially incorrect results to "poison" you data, then you can
+    disable it by setting `fallbackToLikeInsteadOfEqual` parameter to `False`.
+    Also, the `problematicIdentifiersPrefixes` parameter limits the list
+    of such problematic identifiers, and so far `SZ  *` pattern (*note
+    the two spaces*) seems to be one of those (*for example, `SZ  66`*),
+    so `SZ` prefix is added to the list by default. Obviously, if you set
+    `fallbackToLikeInsteadOfEqual` to `False`, then you don't need to care
+    about this parameter at all.
 
     Example:
 
@@ -268,7 +273,7 @@ def getObjectID(
                     # all capital `SZ  *`
                     idValueUppercased = idValue.upper()
                     if (
-                        tryWithLikeToo
+                        fallbackToLikeInsteadOfEqual
                         and
                         idValueUppercased.startswith(
                             tuple(problematicIdentifiersPrefixes)
