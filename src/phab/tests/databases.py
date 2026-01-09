@@ -228,16 +228,17 @@ def test_get_object_id(somethingThatDoesntExist: str) -> None:
             ))
 
         # an object that does exist but has a problematic identifier
-        objectID = simbad.getObjectID(
-            "2MASS J15392828-3446180",  # its `main_id` is `SZ  66`
-            fallbackToLikeInsteadOfEqual=False
-        )
-        assert objectID is None, \
-            " ".join((
-                "There is an object with this identifier, but without LIKE",
-                "in WHERE clause it should have not been found (unless they",
-                "have finally fixed that by now)"
-            ))
+        # (no longer a problem, apparently)
+        # objectID = simbad.getObjectID(
+        #     "2MASS J15392828-3446180",  # its `main_id` is `SZ  66`
+        #     fallbackToLikeInsteadOfEqual=False
+        # )
+        # assert objectID is None, \
+        #     " ".join((
+        #         "There is an object with this identifier, but without LIKE",
+        #         "in WHERE clause it should have not been found (unless they",
+        #         "have finally fixed that by now)"
+        #     ))
 
     # an object that does exist but has a problematic identifier,
     # but this time with a fallback to LIKE

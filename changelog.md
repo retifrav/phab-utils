@@ -2,6 +2,7 @@
 
 <!-- MarkdownTOC -->
 
+- [2026.1.9](#202619)
 - [0.9.0](#090)
 - [0.8.2](#082)
 - [0.8.1](#081)
@@ -18,6 +19,15 @@
 - [0.1.0](#010)
 
 <!-- /MarkdownTOC -->
+
+## 2026.1.9
+
+Released on `2026-01-09`.
+
+- switched to date-based versioning
+- `databases`
+    + `simbad`
+        * `getObjectID()` - fallback with `LIKE` in the `WHERE` clause for problematic identifiers is now disabled by default, as they (*SIMBAD/CDS*) seem to have fixed the problem at least partially (*the conversation is ongoing*)
 
 ## 0.9.0
 

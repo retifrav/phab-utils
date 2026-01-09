@@ -119,7 +119,7 @@ def findIdentificatorFromAnotherCatalogue(
 
 def getObjectID(
     starName: str,
-    fallbackToLikeInsteadOfEqual: bool = True,
+    fallbackToLikeInsteadOfEqual: bool = False,
     problematicIdentifiersPrefixes: List[str] = ["SZ"]
 ) -> Optional[int]:
     """
@@ -132,13 +132,19 @@ def getObjectID(
     not clear, how exactly SIMBAD maintainers choose the main ID for an object,
     so one has to iterate through all the identificators known to SIMBAD.
 
+    ## Some problems with strings
+
     Due to the (*still unresolved?*) issue(s) in SIMBAD/CDS, some identifiers
-    are problematic for querying with `main_id` - they return no results
-    with explicit `=` in `WHERE` clause, but they do return results
-    with `LIKE` instead of `=`, so a workaround/fallback had to be implemented
-    for those. This workaround/fallback is enabled by default, and if you don't
-    want these potentially incorrect results to "poison" you data, then you can
-    disable it by setting `fallbackToLikeInsteadOfEqual` parameter to `False`.
+    were (*still are?*) problematic for querying with `main_id` - they might
+    return no results with explicit `=` in `WHERE` clause, but they will
+    return results with `LIKE` instead of `=`, so a workaround/fallback
+    had to be implemented for those. More details
+    [here](https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/#some-problems-with-strings).
+
+    This workaround/fallback is disabled by default, so if you'd like to get
+    those potentially incorrect results, then you can enable it by setting
+    `fallbackToLikeInsteadOfEqual` parameter to `True`.
+
     Also, the `problematicIdentifiersPrefixes` parameter limits the list
     of such problematic identifiers, and so far `SZ  *` pattern (*note
     the two spaces in the original value, which isn't visible here*) seems
@@ -161,7 +167,7 @@ def getObjectID(
             fallbackToLikeInsteadOfEqual=False
         )
         # this object has a problematic identifier,
-        # so a fallback has to be used, if we still want to get its OID
+        # so a fallback might need to be used, if we still want to get its OID
         #oid = simbad.getObjectID(
         #    "2MASS J15392828-3446180",  # its `main_id` is `SZ  66`
         #    fallbackToLikeInsteadOfEqual=True
