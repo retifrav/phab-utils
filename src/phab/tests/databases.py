@@ -1,7 +1,7 @@
 import pytest
 
 from utils.databases import tap, lightcurves, simbad
-from . import somethingThatDoesntExist
+from . import somethingThatDoesntExist  # noqa: F401
 
 from pyvo.dal.exceptions import DALQueryError
 from contextlib import nullcontext
@@ -27,12 +27,14 @@ def test_known_tap_service(tapService: Tuple[str, str]) -> None:
         ))
 
 
-def test_unknown_tap_service(somethingThatDoesntExist: str) -> None:
+def test_unknown_tap_service(
+    somethingThatDoesntExist: str  # noqa: F811
+) -> None:
     with pytest.raises(
         ValueError,
         match=r"^There is no TAP service under the name.*$"
     ):
-        tapServiceEndpoint = tap.getServiceEndpoint(somethingThatDoesntExist)
+        tapServiceEndpoint = tap.getServiceEndpoint(somethingThatDoesntExist)  # noqa: F841
 
 
 def test_escape_special_characters_for_adql() -> None:
@@ -131,7 +133,9 @@ def test_get_light_curve_stats() -> None:
     assert len(stats) > 0
 
 
-def test_get_light_curve_stats_fail(somethingThatDoesntExist: str) -> None:
+def test_get_light_curve_stats_fail(
+    somethingThatDoesntExist: str  # noqa: F811
+) -> None:
     stats = lightcurves.getLightCurveStats(somethingThatDoesntExist)
     assert not stats
 
@@ -142,12 +146,14 @@ def test_get_light_curve_ids() -> None:
     assert len(ids) > 0
 
 
-def test_get_light_curve_ids_fail(somethingThatDoesntExist: str) -> None:
+def test_get_light_curve_ids_fail(
+    somethingThatDoesntExist: str  # noqa: F811
+) -> None:
     with pytest.raises(
         ValueError,
         match=r"^Didn't find any results for this star$"
     ):
-        stats = lightcurves.getLightCurveIDs(somethingThatDoesntExist)
+        stats = lightcurves.getLightCurveIDs(somethingThatDoesntExist)  # noqa: F841
 
 
 @pytest.mark.parametrize(
@@ -204,7 +210,9 @@ def test_fits_to_pandas_and_light_curve_tess_to_pandas(
     assert pnd3.iloc[0, 0] == pnd2.iloc[0, 0]
 
 
-def test_get_object_id(somethingThatDoesntExist: str) -> None:
+def test_get_object_id(
+    somethingThatDoesntExist: str  # noqa: F811
+) -> None:
     # an object that does exist and has no problems with its identifier
     objectID = simbad.getObjectID(
         "A2 146",
@@ -251,7 +259,7 @@ def test_get_object_id(somethingThatDoesntExist: str) -> None:
 
 
 def test_get_stellar_parameter_from_simbad_by_main_id(
-    somethingThatDoesntExist: str
+    somethingThatDoesntExist: str  # noqa: F811
 ) -> None:
     # parameter of an object that does exist
     rez = tap.getStellarParameterFromSimbadByMainID(
@@ -300,7 +308,7 @@ def test_get_stellar_parameter_from_simbad_by_object_id() -> None:
 
 
 def test_get_stellar_parameter(
-    somethingThatDoesntExist: str
+    somethingThatDoesntExist: str  # noqa: F811
 ) -> None:
     # parameter of an object that does exist
     rez = simbad.getStellarParameter(

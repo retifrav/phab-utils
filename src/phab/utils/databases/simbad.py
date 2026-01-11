@@ -4,7 +4,7 @@ astronomical database.
 """
 
 from astroquery.simbad import Simbad
-from astroquery import __version__ as astroqueryVersion
+from astroquery import __version__ as astroqueryVersion  # noqa: F401
 import re
 
 from typing import Optional, Any, List
@@ -196,7 +196,7 @@ def getObjectID(
         oid = rez[0]["oid"]
         logger.debug(
             " ".join((
-                f"- yes, that is already the main ID,",
+                "- yes, that is already the main ID,",
                 "no need to iterate all the identificators.",
                 f"SIMBAD object ID is: {oid}"
             ))

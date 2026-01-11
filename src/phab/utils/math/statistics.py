@@ -7,9 +7,6 @@ import pandas
 
 from typing import List, Hashable
 
-from ..logs.log import logger
-
-
 def findOutliers(
     srs: pandas.Series,
     sigma: int = 3,
@@ -122,11 +119,13 @@ def findOutliers(
     # NaNs and INFs are not outliers
     # print(tbl["finite"].loc[lambda x: x == False].index)
     tbl.loc[
-        tbl["finite"] == False,
+        tbl["finite"] == False,  # noqa: E712
         "outliers"
     ] = False
 
-    tableFinite = tbl[tbl["finite"] == True].iloc[:, 0]
+    tableFinite = tbl[
+        tbl["finite"] == True  # noqa: E712
+    ].iloc[:, 0]
 
     med = numpy.median(tableFinite.values)  # type:ignore[arg-type] # ya hz
     sig = 1.48 * numpy.median(numpy.abs(tableFinite - med))  # type:ignore[operator] # ya hz
@@ -167,7 +166,7 @@ def findOutliers(
         countingSincePreviousOutlier: bool = True
         potentialNeighbourOutliers: List[Hashable] = []
         for i, v in outlrs.items():
-            if v == True:
+            if v == True:  # noqa: E712
                 if countingSincePreviousOutlier:
                     # make all the previous elements to be outliers too
                     for pno in potentialNeighbourOutliers:

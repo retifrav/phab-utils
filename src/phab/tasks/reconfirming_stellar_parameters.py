@@ -10,13 +10,11 @@ import numpy
 from typing import Optional, List, Dict
 
 try:
-    from ..utils.files import pickle
     from ..utils.databases import tap, simbad
 except ImportError:
     # what the hell is even that, for using the installed package
     # imports need to be done way, but for generating documentation
     # with pdoc it needs to be a different way
-    from utils.files import pickle
     from utils.databases import tap, simbad
 
 

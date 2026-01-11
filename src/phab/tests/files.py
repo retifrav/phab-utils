@@ -19,7 +19,7 @@ def test_directory_exists() -> None:
     assert dir2 is None
 
     # path that is a file
-    dir3 = fl.directoryExists(f"./data/systems-528n.pkl")
+    dir3 = fl.directoryExists("./data/systems-528n.pkl")
     assert dir3 is None
 
 
@@ -33,7 +33,7 @@ def test_file_exists() -> None:
     assert file2 is None
 
     # path that is a directory
-    file3 = fl.fileExists(f"./data/")
+    file3 = fl.fileExists("./data/")
     assert file3 is None
 
 
@@ -45,7 +45,7 @@ def test_open_pickle_as_pandas_table_fail(
         ValueError,
         match=r"^Provided path to \[.*\] seems to be wrong$"
     ):
-        tbl = pickle.openPickleAsPandasTable(somethingThatDoesntExist)
+        tbl = pickle.openPickleAsPandasTable(somethingThatDoesntExist)  # noqa: F841
     # openning a folder instead of a file
     # (no longer raises this one)
     # with pytest.raises(ValueError, match=r"^The path \[.*\] is not a file$"):

@@ -1,6 +1,3 @@
-from typing import Optional
-
-
 def floatToStringForADQLcastVarchar(
     floatValue: float,
     dropLeadingZero: bool = False

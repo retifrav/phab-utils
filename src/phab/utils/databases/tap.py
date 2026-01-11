@@ -249,9 +249,9 @@ def getParametersThatAreDoubleInNASA() -> List[str]:
     results = queryService(
         getServiceEndpoint("nasa"),
         " ".join((
-            f"SELECT column_name",
-            f"FROM tap_schema.columns",
-            f"WHERE table_name = 'ps' AND datatype = 'double'"
+            "SELECT column_name",
+            "FROM tap_schema.columns",
+            "WHERE table_name = 'ps' AND datatype = 'double'"
         ))
     )
     if results:
@@ -297,7 +297,7 @@ def getStellarParameterFromNASA(
                 if not parameterTypeIsDouble else
                 f"SELECT CAST({param} AS REAL) AS {param}_real"
             ),
-            f"FROM ps",
+            "FROM ps",
             f"WHERE hostname = '{systemName}' AND {param} IS NOT NULL",
             "ORDER BY pl_pubdate DESC"
         ))
@@ -350,7 +350,7 @@ def getPlanetaryParameterFromNASA(
                 if not parameterTypeIsDouble else
                 f"SELECT CAST({param} AS REAL) AS {param}_real"
             ),
-            f"FROM ps",
+            "FROM ps",
             f"WHERE pl_name = '{planetName}' AND {param} IS NOT NULL",
             "ORDER BY pl_pubdate DESC"
         ))
@@ -415,8 +415,8 @@ def getPlanetaryParameterReferenceFromNASA(
     results = queryService(
         getServiceEndpoint("nasa"),
         " ".join((
-            f"SELECT pl_refname",  # TOP is broken in NASA: https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/#top-clause-is-broken
-            f"FROM ps",
+            "SELECT pl_refname",  # TOP is broken in NASA: https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/#top-clause-is-broken
+            "FROM ps",
             f"WHERE pl_name = '{planetName}' AND {paramName}",
             (
                 f"= {paramValue}"
@@ -452,8 +452,8 @@ def getPlanetaryParameterReferenceFromNASA(
         results = queryService(
             getServiceEndpoint("nasa"),
             " ".join((
-                f"SELECT pl_refname",  # TOP is broken in NASA: https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/#top-clause-is-broken
-                f"FROM ps",
+                "SELECT pl_refname",  # TOP is broken in NASA: https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/#top-clause-is-broken
+                "FROM ps",
                 f"WHERE pl_name = '{planetName}'",
                 " ".join((
                     f"AND CAST({paramName} AS VARCHAR({paramValueLength}))",
@@ -582,7 +582,7 @@ def getParameterFromPADC(
         getServiceEndpoint("padc"),
         " ".join((
             f"SELECT {param}",
-            f"FROM exoplanet.epn_core",
+            "FROM exoplanet.epn_core",
             f"WHERE granule_uid = '{planetName}' AND {param} IS NOT NULL"
         ))
     )

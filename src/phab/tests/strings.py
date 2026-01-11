@@ -1,11 +1,10 @@
-import pytest
 
 from utils.strings import extraction, conversion
-from . import somethingThatDoesntExist
+from . import somethingThatDoesntExist  # noqa: F401
 
 
 def test_ref_from_full_reference_nasa(
-    somethingThatDoesntExist: str
+    somethingThatDoesntExist: str  # noqa: F811
 ) -> None:
     ref = extraction.adsRefFromFullReferenceNASA(
         "<a refstr=BORSATO_ET_AL__2014 href=https://ui.adsabs.harvard.edu/abs/2014A&A...571A..38B/abstract target=ref>Borsato et al. 2014</a>"

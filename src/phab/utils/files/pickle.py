@@ -5,7 +5,7 @@ File operations with [pickles](https://docs.python.org/3/library/pickle.html).
 import pathlib
 import pandas
 
-from typing import Optional, List, Union
+from typing import Optional, Union
 
 from ..datasets import pandas as pnd
 from ..files import file as fl
