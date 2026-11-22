@@ -2,6 +2,7 @@
 
 <!-- MarkdownTOC -->
 
+- [?](#)
 - [2026.1.9](#202619)
 - [0.9.0](#090)
 - [0.8.2](#082)
@@ -20,9 +21,18 @@
 
 <!-- /MarkdownTOC -->
 
-## 2026.1.9
+## ?
 
-Released on `2026-01-09`.
+- `databases`
+    + `mirrors` - new module for falling back to mirror servers when the main one is unavailable (*SIMBAD at CDS since October 2026*), with `mainServerConnectTimeout` (*5 seconds*) and `mainServerCooldown` (*10 minutes*);
+    + `tap`
+        * CfA Harvard and IDIA mirrors for SIMBAD, `queryService()` falls back to the mirrors and explains Cloudflare's 403 blocks (*new `getFirewallBlockHint()`*)
+        * NASA queries are rephrased to get past Cloudflare's firewall:
+            - literal conditions go last;
+            - no `CAST` - doubles are selected as `param + 0`, now with full double precision, and the reference retry compares with a range;
+    + `simbad` - identifier lookups fall back to the mirrors, using their own Astroquery SIMBAD instance.
+
+## 2026.1.9
 
 - switched to date-based versioning
 - `databases`

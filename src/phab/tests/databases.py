@@ -1,15 +1,20 @@
 import pytest
 
-from utils.databases import tap, lightcurves, simbad
+from utils.databases import tap, lightcurves, simbad, mirrors
 from . import somethingThatDoesntExist  # noqa: F401
 
-from pyvo.dal.exceptions import DALQueryError
+from pyvo.dal.exceptions import (
+    DALQueryError,
+    DALServiceError,
+    DALFormatError
+)
 from contextlib import nullcontext
 from packaging.version import Version
 import pandas
 import lightkurve
+import requests
 
-from typing import Tuple, Literal
+from typing import Tuple, Literal, Callable, Dict, List, Optional
 
 
 @pytest.fixture
@@ -67,6 +72,210 @@ def test_escape_special_characters_for_adql() -> None:
     )
 
 
+@pytest.fixture
+def noMainServerFailures(monkeypatch: pytest.MonkeyPatch) -> None:
+    # so no main server is skipped because of a failure in another test
+    monkeypatch.setattr(mirrors, "_mainServerFailures", {})
+
+
+def fakeServersAttempt(
+    failures: Dict[str, Exception],
+    calls: List[Tuple[str, Optional[float]]]
+) -> Callable[[str], str]:
+    # records every attempt with its connect timeout and fails
+    # for the servers from `failures` with their exception
+    def attempt(server: str) -> str:
+        calls.append((server, mirrors._attemptConnectTimeout.get()))
+        if server in failures:
+            raise failures[server]
+        return f"results from {server}"
+    return attempt
+
+
+def test_mirrors_fall_back_on_unavailable_servers(
+    noMainServerFailures: None
+) -> None:
+    for failure in (
+        DALServiceError("404 Client Error: Not Found", 404),
+        DALFormatError(ConnectionError("Connection refused")),
+        OSError("Connection timed out")
+    ):
+        calls: List[Tuple[str, Optional[float]]] = []
+        result = mirrors.tryMirrors(
+            ["main", "mirror1", "mirror2"],
+            fakeServersAttempt(
+                {"main": failure, "mirror1": OSError("Connection reset")},
+                calls
+            )
+        )
+        assert result == "results from mirror2"
+        # only the main server has the connect timeout
+        assert calls == [
+            ("main", mirrors.mainServerConnectTimeout),
+            ("mirror1", None),
+            ("mirror2", None)
+        ]
+        assert mirrors._attemptConnectTimeout.get() is None
+        mirrors._mainServerFailures.clear()
+
+
+def test_mirrors_do_not_retry_query_errors(
+    noMainServerFailures: None
+) -> None:
+    calls: List[Tuple[str, Optional[float]]] = []
+    with pytest.raises(DALQueryError, match=r"^Incorrect ADQL query$"):
+        mirrors.tryMirrors(
+            ["main", "mirror"],
+            fakeServersAttempt(
+                {"main": DALQueryError("Incorrect ADQL query")},
+                calls
+            )
+        )
+    assert calls == [("main", mirrors.mainServerConnectTimeout)]
+    assert mirrors._attemptConnectTimeout.get() is None
+    assert "main" not in mirrors._mainServerFailures
+
+
+def test_mirrors_last_error_propagates(
+    noMainServerFailures: None
+) -> None:
+    lastError = DALServiceError("504 Server Error: Gateway Time-out", 504)
+    with pytest.raises(DALServiceError) as ex:
+        mirrors.tryMirrors(
+            ["main", "mirror"],
+            fakeServersAttempt(
+                {"main": OSError("Connection timed out"), "mirror": lastError},
+                []
+            )
+        )
+    assert ex.value is lastError
+
+
+def test_mirrors_single_server_is_a_plain_call(
+    noMainServerFailures: None
+) -> None:
+    calls: List[Tuple[str, Optional[float]]] = []
+    with pytest.raises(OSError):
+        mirrors.tryMirrors(
+            ["main"],
+            fakeServersAttempt({"main": OSError("Connection timed out")}, calls)
+        )
+    # no connect timeout and no cooldown without mirrors
+    assert calls == [("main", None)]
+    assert "main" not in mirrors._mainServerFailures
+    with pytest.raises(ValueError, match=r"^The list of servers .*$"):
+        mirrors.tryMirrors([], fakeServersAttempt({}, calls))
+
+
+def test_mirrors_main_server_cooldown(
+    noMainServerFailures: None,
+    monkeypatch: pytest.MonkeyPatch
+) -> None:
+    failures: Dict[str, Exception] = {"main": OSError("Connection timed out")}
+    calls: List[Tuple[str, Optional[float]]] = []
+    attempt = fakeServersAttempt(failures, calls)
+    servers: List[str] = ["main", "mirror"]
+
+    # the main server fails, so it is skipped on the next call
+    assert mirrors.tryMirrors(servers, attempt) == "results from mirror"
+    assert "main" in mirrors._mainServerFailures
+    assert mirrors.tryMirrors(servers, attempt) == "results from mirror"
+    assert [c[0] for c in calls] == ["main", "mirror", "mirror"]
+
+    # once the cooldown is over, the main server is tried first again
+    calls.clear()
+    monkeypatch.setattr(mirrors, "mainServerCooldown", 0)
+    assert mirrors.tryMirrors(servers, attempt) == "results from mirror"
+    assert [c[0] for c in calls] == ["main", "mirror"]
+
+    # and once it is back, its failure is forgotten,
+    # so it is not skipped even with a cooldown
+    calls.clear()
+    del failures["main"]
+    assert mirrors.tryMirrors(servers, attempt) == "results from main"
+    assert "main" not in mirrors._mainServerFailures
+    monkeypatch.setattr(mirrors, "mainServerCooldown", 600)
+    assert mirrors.tryMirrors(servers, attempt) == "results from main"
+    assert calls == [
+        ("main", mirrors.mainServerConnectTimeout),
+        ("main", mirrors.mainServerConnectTimeout)
+    ]
+
+
+def test_mirrors_of_tap_services() -> None:
+    simbadEndpoint = tap.getServiceEndpoint("simbad")
+    simbadMirrors = tap.getServiceMirrors(simbadEndpoint)
+    assert len(simbadMirrors) > 0
+    assert simbadMirrors == tap.services["simbad"]["mirrors"]
+    assert tap.getServiceMirrors(f"{simbadEndpoint}/") == simbadMirrors
+    # an endpoint that is not from the list is never redirected,
+    # and a mirror is not such an endpoint either
+    assert tap.getServiceMirrors(simbadMirrors[0]) == []
+    assert tap.getServiceMirrors(tap.getServiceEndpoint("nasa")) == []
+
+
+@pytest.mark.parametrize(
+    "server, status, contentType, rayID, expectedHint",
+    [
+        ("cloudflare", 403, "text/html; charset=UTF-8", "a5e9-OSL", True),
+        ("cloudflare", 403, "text/html; charset=UTF-8", None, True),
+        ("cloudflare", 403, "application/xml", "a5e9-OSL", False),
+        ("nginx", 403, "text/html", None, False),
+        ("cloudflare", 404, "text/html; charset=UTF-8", "a5e9-OSL", False)
+    ]
+)
+def test_firewall_block_hint(
+    server: str,
+    status: int,
+    contentType: str,
+    rayID: Optional[str],
+    expectedHint: bool
+) -> None:
+    response = requests.Response()
+    response.status_code = status
+    response.headers["Server"] = server
+    response.headers["Content-Type"] = contentType
+    if rayID:
+        response.headers["CF-RAY"] = rayID
+    response._content = b"<html>Attention Required! | Cloudflare</html>"
+    hint = tap.getFirewallBlockHint(
+        DALServiceError.from_except(
+            requests.HTTPError(f"{status} Client Error", response=response),
+            "https://exoplanetarchive.ipac.caltech.edu/TAP/sync"
+        )
+    )
+    if expectedHint:
+        assert hint.startswith("The request was blocked by Cloudflare")
+        assert hint.endswith(f"Ray ID: {rayID if rayID else 'unknown'}.")
+    else:
+        assert hint == ""
+    # the service's own errors are not blocks
+    assert tap.getFirewallBlockHint(DALQueryError("Incorrect ADQL query")) == ""
+
+
+@pytest.mark.parametrize(
+    "value, expectedCondition",
+    [
+        (0.31212, "pl_massj >= 0.3121 AND pl_massj < 0.3122"),
+        (-0.31212, "pl_massj > -0.3122 AND pl_massj <= -0.3121"),
+        (1.2345, "pl_massj >= 1.234 AND pl_massj < 1.235"),
+        (12.5, "pl_massj >= 12 AND pl_massj < 13"),
+        (5, "pl_massj >= 5 AND pl_massj < 6"),
+        (1e-05, "pl_massj >= 0.0000 AND pl_massj < 0.0001")
+    ]
+)
+def test_range_condition_for_doubles_in_nasa(
+    value: float,
+    expectedCondition: str
+) -> None:
+    # the same values as `CAST(pl_massj AS VARCHAR(n)) LIKE '.3121%'`
+    # used to match, which Cloudflare's firewall in front of NASA blocks
+    assert tap._doubleRangeConditionForADQL(
+        "pl_massj",
+        value
+    ) == expectedCondition
+
+
 def test_get_parameters_that_are_double_in_nasa() -> None:
     doubles = tap.getParametersThatAreDoubleInNASA()
     assert len(doubles) > 1
@@ -82,6 +291,29 @@ def test_getting_planetary_parameter_from_nasa() -> None:
     planetName = "Kepler-11 b"
     plname = tap.getPlanetaryParameterFromNASA(planetName, "pl_name")
     assert plname == planetName
+
+
+def test_getting_double_parameters_from_nasa() -> None:
+    # selected as an expression, which NASA does not round
+    # according to the column's format
+    teff = tap.getStellarParameterFromNASA(
+        "Kepler-11",
+        "st_teff",
+        parameterTypeIsDouble=True
+    )
+    assert isinstance(teff, float)
+    massRounded = tap.getPlanetaryParameterFromNASA(
+        "KOI-4777.01",
+        "pl_massj"
+    )
+    mass = tap.getPlanetaryParameterFromNASA(
+        "KOI-4777.01",
+        "pl_massj",
+        parameterTypeIsDouble=True
+    )
+    assert isinstance(massRounded, float)
+    assert isinstance(mass, float)
+    assert abs(mass - massRounded) < 1e-7
 
 
 def test_get_planetary_parameter_reference_from_nasa() -> None:

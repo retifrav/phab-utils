@@ -13,10 +13,13 @@ via [TAP](https://ivoa.net/documents/TAP/) interface.
 import pyvo
 import re
 
-from typing import Optional, Dict, List, Tuple, Any, cast
+from decimal import Decimal
+from pyvo.utils.http import create_session
+from typing import Optional, Dict, List, Tuple, Any
 
 from ..logs.log import logger
-from ..strings import extraction, conversion
+from ..databases import mirrors
+from ..strings import extraction
 
 services: Dict[str, Dict] = {
     "nasa":
@@ -51,12 +54,22 @@ services: Dict[str, Dict] = {
     },
     "simbad":
     {
-        "endpoint": "http://simbad.cds.unistra.fr/simbad/sim-tap/sync"
+        # the base URL of the service, PyVO appends `/sync` itself
+        "endpoint": "https://simbad.cds.unistra.fr/simbad/sim-tap",
+        # tried in this order when the main server is unavailable,
+        # as it has been since late October 2026
+        "mirrors":
+        [
+            "https://simbad.cfa.harvard.edu/simbad/sim-tap",
+            "https://simbad.idia.ac.za/simbad/sim-tap"
+        ]
         # does not support CAST, so no "drops-leading-zero-on-cast-to-varchar"
     }
 }
 """
-Dictionary of the most common TAP services.
+Dictionary of the most common TAP services. A service might also have
+a list of `mirrors`, which `utils.databases.tap.queryService` falls back to
+when the main `endpoint` is unavailable.
 """
 
 mappings: Dict[str, Dict] = {
@@ -141,6 +154,92 @@ def getServiceEndpoint(tapServiceName: str) -> str:
         )
 
 
+def getServiceMirrors(tapEndpoint: str) -> List[str]:
+    """
+    Get the mirrors of a TAP service by its endpoint, if that is one
+    of the `utils.databases.tap.services` (*a trailing `/` doesn't matter*),
+    and if it has mirrors. Otherwise returns an empty list, so an endpoint
+    that is not from that list is never replaced with some other one.
+
+    Example:
+
+    ``` py
+    from phab.utils.databases import tap
+
+    tapServiceMirrors = tap.getServiceMirrors(tap.getServiceEndpoint("simbad"))
+    print(tapServiceMirrors)
+    ```
+    """
+    for tapService in services.values():
+        if tapService["endpoint"].rstrip("/") == tapEndpoint.rstrip("/"):
+            return list(tapService.get("mirrors", []))
+    return []
+
+
+def getFirewallBlockHint(ex: Exception) -> str:
+    """
+    Get an explanation for an HTTP 403 page from [Cloudflare](https://cloudflare.com/),
+    which some services (*such as NASA Exoplanet Archive*) have in front of them,
+    or an empty string for any other error.
+
+    PyVO keeps the response body only for `text/plain` errors, so such an HTML page
+    becomes a bare `403 Client Error: Forbidden`. Every response from such a service
+    has `Server: cloudflare`, so only a 403 with an HTML page is taken as a block,
+    while the service's own errors are VOTables. More details in the Known problems
+    section of `utils.databases`.
+
+    `utils.databases.tap.queryService` already logs this explanation for a blocked
+    query, so this function is only needed for queries that are sent some other way.
+
+    Example:
+
+    ``` py
+    import pyvo
+    from phab.utils.databases import tap
+
+    try:
+        pyvo.dal.TAPService(tap.getServiceEndpoint("nasa")).search(
+            " ".join((
+                "SELECT pl_name, pl_radj",
+                "FROM ps",
+                "WHERE pl_name = 'Kepler-106 e' AND pl_radj IS NOT NULL"
+            ))
+        )
+    except pyvo.dal.exceptions.DALServiceError as ex:
+        print(ex)
+        firewallBlockHint = tap.getFirewallBlockHint(ex)
+        if firewallBlockHint:
+            print(firewallBlockHint)
+    ```
+    """
+    if (
+        not isinstance(ex, pyvo.dal.exceptions.DALServiceError)
+        or
+        ex.code != 403
+    ):
+        return ""
+    response = getattr(ex.cause, "response", None)
+    if (
+        response is None
+        or
+        response.headers.get("Server", "").lower() != "cloudflare"
+        or
+        "text/html" not in response.headers.get("Content-Type", "")
+    ):
+        return ""
+    return " ".join((
+        "The request was blocked by Cloudflare (the firewall in front",
+        "of this service), most likely because to the firewall the query",
+        "looks like an SQL injection attack, such as a string literal",
+        "followed by AND or OR and then an IS NULL or IS NOT NULL condition,",
+        "or a CAST. Try to rephrase the query, for example by reordering",
+        "the conditions in WHERE or by replacing a CAST with an arithmetic",
+        "expression or a range. If that doesn't help, you can report the block",
+        "to the service by referring to its Cloudflare Ray ID:",
+        f"{response.headers.get('CF-RAY', 'unknown')}."
+    ))
+
+
 def escapeSpecialCharactersForAdql(rawQuery: str) -> str:
     """
     Escape certain special characters in ADQL query. For now only escapes
@@ -198,12 +297,21 @@ def queryService(
     else:
         print("No results")
     ```
+
+    If `tapEndpoint` is the endpoint of one of the `utils.databases.tap.services`
+    that have mirrors (*such as SIMBAD*), then the query falls back to those
+    when the main server is unavailable, more details in `utils.databases.mirrors`.
+    Any other endpoint is queried as it is.
+
+    If the query is blocked by Cloudflare's firewall (*which NASA Exoplanet Archive
+    has in front of it*), then an explanation from `utils.databases.tap.getFirewallBlockHint`
+    is logged, and the exception is raised as usual.
     """
-    tapService = pyvo.dal.TAPService(tapEndpoint)
+    tapServers: List[str] = [tapEndpoint] + getServiceMirrors(tapEndpoint)
     logger.debug(f"ADQL query to execute: {adqlQuery}")
     results = None
     try:
-        results = tapService.search(adqlQuery)
+        results = _search(tapServers, adqlQuery)
     except pyvo.dal.exceptions.DALQueryError as ex:
         if tryToReExecuteOnFailure:
             logger.warning(
@@ -215,7 +323,7 @@ def queryService(
             )
             adqlQueryEscaped = escapeSpecialCharactersForAdql(adqlQuery)
             logger.debug(f"Escaped ADQL query to execute: {adqlQueryEscaped}")
-            results = tapService.search(adqlQueryEscaped)
+            results = _search(tapServers, adqlQueryEscaped)
         else:
             raise
     if results is not None and len(results) > 0:
@@ -225,15 +333,41 @@ def queryService(
         return None
 
 
+def _search(
+    tapServers: List[str],
+    adqlQuery: str
+) -> pyvo.dal.tap.TAPResults:
+    try:
+        return mirrors.tryMirrors(
+            tapServers,
+            lambda url: pyvo.dal.TAPService(
+                url,
+                # the same session that PyVO creates by default, plus
+                # the connect timeout that `tryMirrors()` gives
+                # to the main server
+                session=mirrors.addConnectTimeout(create_session())
+            ).search(adqlQuery)
+        )
+    except pyvo.dal.exceptions.DALServiceError as ex:
+        firewallBlockHint: str = getFirewallBlockHint(ex)
+        if firewallBlockHint:
+            logger.error(firewallBlockHint)
+        raise
+
+
 def getParametersThatAreDoubleInNASA() -> List[str]:
     """
-    Get the list of parameters names in the NASA `ps` table that have
-    the `double` type. That is needed so you knew when to apply
-    `CAST(PARAMETER_NAME_HERE AS REAL)` in your `SELECT` statements
-    or `CAST(PARAMETER_NAME_HERE AS VARCHAR(30))` in your `WHERE`
-    statements, otherwise NASA returns rounded values by default
-    (according to their `format` value in `tap_schema.columns`),
+    Get the list of parameters names in the NASA `ps` table that have the `double`
+    type. That is needed so you knew when to select `PARAMETER_NAME_HERE + 0`
+    instead of just `PARAMETER_NAME_HERE` in your `SELECT` statements or to compare
+    with a range instead of `=` in your `WHERE` statements, otherwise NASA returns
+    rounded values by default (according to their `format` value in `tap_schema.columns`),
     so you might not get the expected results.
+
+    This used to be done with `CAST(PARAMETER_NAME_HERE AS REAL)`
+    and `CAST(PARAMETER_NAME_HERE AS VARCHAR(30))`, but Cloudflare's firewall in front
+    of NASA blocks queries with `CAST`, more details in the Known problems section
+    of `utils.databases`.
 
     Example:
 
@@ -295,20 +429,26 @@ def getStellarParameterFromNASA(
             (
                 f"SELECT {param}"
                 if not parameterTypeIsDouble else
-                f"SELECT CAST({param} AS REAL) AS {param}_real"
+                # an expression has no `format` in `tap_schema.columns`, so NASA returns
+                # its full value instead of rounding it. It used to be `CAST({param} AS REAL)`,
+                # but Cloudflare's firewall in front of NASA blocks queries with `CAST`
+                f"SELECT {param} + 0 AS {param}_real"
             ),
             "FROM ps",
-            f"WHERE hostname = '{systemName}' AND {param} IS NOT NULL",
+            # the condition with the string literal goes last, because Cloudflare's firewall
+            # in front of NASA blocks a string literal followed by AND and then IS NOT NULL,
+            # more details in the Known problems section of `utils.databases`
+            f"WHERE {param} IS NOT NULL AND hostname = '{systemName}'",
             "ORDER BY pl_pubdate DESC"
         ))
     )
     if results:
         # logger.debug(f"All results for this parameter:\n{results}")
-        return (
-            results[0].get(param)
-            if not parameterTypeIsDouble else
-            results[0].get(f"{param}_real")
-        )
+        if not parameterTypeIsDouble:
+            return results[0].get(param)
+        # NASA declares the type of an expression by its values, so it is `int` when all
+        # of them are whole numbers, but this is a double
+        return float(results[0].get(f"{param}_real"))
     else:
         return None
 
@@ -348,20 +488,26 @@ def getPlanetaryParameterFromNASA(
             (
                 f"SELECT {param}"
                 if not parameterTypeIsDouble else
-                f"SELECT CAST({param} AS REAL) AS {param}_real"
+                # an expression has no `format` in `tap_schema.columns`, so NASA returns
+                # its full value instead of rounding it. It used to be `CAST({param} AS REAL)`,
+                # but Cloudflare's firewall in front of NASA blocks queries with `CAST`
+                f"SELECT {param} + 0 AS {param}_real"
             ),
             "FROM ps",
-            f"WHERE pl_name = '{planetName}' AND {param} IS NOT NULL",
+            # the condition with the string literal goes last, because Cloudflare's firewall
+            # in front of NASA blocks a string literal followed by AND and then IS NOT NULL,
+            # more details in the Known problems section of `utils.databases`
+            f"WHERE {param} IS NOT NULL AND pl_name = '{planetName}'",
             "ORDER BY pl_pubdate DESC"
         ))
     )
     if results:
         # logger.debug(f"All results for this parameter:\n{results}")
-        return (
-            results[0].get(param)
-            if not parameterTypeIsDouble else
-            results[0].get(f"{param}_real")
-        )
+        if not parameterTypeIsDouble:
+            return results[0].get(param)
+        # NASA declares the type of an expression by its values, so it is `int` when all of them
+        # are whole numbers, but this is a double
+        return float(results[0].get(f"{param}_real"))
     else:
         return None
 
@@ -380,7 +526,12 @@ def getPlanetaryParameterReferenceFromNASA(
 
     The `parameterTypeIsDouble` argument  is a workaround for the problem with
     [inconsistent values](https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/#float-values-are-rounded-on-select-but-compared-to-originals-in-where)
-    in `SELECT`/`WHERE`.
+    in `SELECT`/`WHERE`. If the query with `=` returns nothing, and `tryToReExecuteIfNoResults`
+    is set, then it is executed again with a range of values instead: `0.31212` without
+    its last digit becomes `>= 0.3121 AND < 0.3122`. That is the same set of values which
+    `CAST(… AS VARCHAR(n)) LIKE '.3121%'` used to match, but Cloudflare's firewall in front
+    of NASA blocks queries with `CAST`, more details in the Known problems section
+    of `utils.databases`.
 
     Example:
 
@@ -440,25 +591,19 @@ def getPlanetaryParameterReferenceFromNASA(
         logger.warning(
             " ".join((
                 "The query returned no results, will try to execute again,",
-                "but this time with the parameter casted from double to string"
+                "but this time with a range of values around the parameter"
             ))
-        )
-        paramValueLength = len(str(paramValue))
-        paramValue = cast(float, paramValue)
-        paramValueString = conversion.floatToStringForADQLcastVarchar(
-            paramValue,
-            dropLeadingZero=True
         )
         results = queryService(
             getServiceEndpoint("nasa"),
             " ".join((
                 "SELECT pl_refname",  # TOP is broken in NASA: https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/#top-clause-is-broken
                 "FROM ps",
-                f"WHERE pl_name = '{planetName}'",
-                " ".join((
-                    f"AND CAST({paramName} AS VARCHAR({paramValueLength}))",
-                    f"LIKE '{paramValueString}'"
-                )),
+                # the condition with the string literal goes last, because
+                # of Cloudflare's firewall in front of NASA
+                "WHERE",
+                _doubleRangeConditionForADQL(paramName, paramValue),
+                f"AND pl_name = '{planetName}'",
                 "ORDER BY pl_pubdate DESC"
             ))
         )
@@ -475,6 +620,31 @@ def getPlanetaryParameterReferenceFromNASA(
         return ref
     else:
         return None
+
+
+def _doubleRangeConditionForADQL(
+    column: str,
+    value: int | float | str
+) -> str:
+    # the values whose decimal representation starts with the given value without its last digit,
+    # which is what the old workaround matched with `CAST(column AS VARCHAR(n)) LIKE 'value without last digit%'`:
+    # 0.31212 becomes [0.3121, 0.3122), -0.31212 becomes (-0.3122, -0.3121] and 12.5 becomes [12, 13)
+    valueString: str = f"{Decimal(str(value)):f}"
+    if "." not in valueString:
+        valueString = f"{valueString}.0"
+    prefixString: str = valueString[:-1]
+    prefix: Decimal = Decimal(prefixString)
+    step: Decimal = Decimal(1).scaleb(-len(prefixString.split(".", 1)[1]))
+    if prefixString.startswith("-"):
+        return " ".join((
+            f"{column} > {prefix - step:f}",
+            f"AND {column} <= {prefix:f}"
+        ))
+    else:
+        return " ".join((
+            f"{column} >= {prefix:f}",
+            f"AND {column} < {prefix + step:f}"
+        ))
 
 
 def getParameterFromNASA(

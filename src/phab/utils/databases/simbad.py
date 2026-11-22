@@ -1,16 +1,51 @@
 """
 Getting data from [SIMBAD](https://simbad.u-strasbg.fr/simbad/)
 astronomical database.
+
+When the main SIMBAD server is unavailable, the queries fall back
+to its mirrors, more details in `utils.databases.mirrors`.
 """
 
-from astroquery.simbad import Simbad
+from astroquery.simbad import SimbadClass
+from astroquery.simbad import conf as simbadConf
 from astroquery import __version__ as astroqueryVersion  # noqa: F401
 import re
 
 from typing import Optional, Any, List
 
 from ..logs.log import logger
-from ..databases import tap
+from ..databases import mirrors, tap
+
+# own instance instead of astroquery's shared `Simbad` one, so setting
+# the server for every attempt of `tryMirrors()` and the connect timeout
+# don't change anything for the `Simbad` of the consuming project
+_simbad = SimbadClass()
+# for the connect timeout that `tryMirrors()` gives to the main server.
+# Astroquery has no setting for network timeouts (`timeout` is the time limit
+# for executing asynchronous queries on the server), but its `tap` property
+# creates the PyVO service with this session. It is a private attribute
+# of astroquery's `BaseQuery`, which every astroquery service has had for years
+mirrors.addConnectTimeout(_simbad._session)
+
+
+def _getSimbadServers() -> List[str]:
+    # the configured server (CDS by default) first, then the mirrors
+    # that astroquery knows about, only these names pass the validation
+    # in the `server` setter. Before 0.4.8 astroquery did not use TAP
+    # and had no `server` property, so setting it does nothing there
+    serversList: List[str] = getattr(
+        simbadConf,
+        "servers_list",
+        [simbadConf.server]
+    )
+    return [simbadConf.server] + [
+        s for s in serversList if s != simbadConf.server
+    ]
+
+
+def _queryObjectIDs(server: str, objectName: str) -> Any:
+    _simbad.server = server
+    return _simbad.query_objectids(objectName)
 
 
 def findIdentificatorFromAnotherCatalogue(
@@ -46,7 +81,10 @@ def findIdentificatorFromAnotherCatalogue(
     """
     otherID = None
 
-    otherIDs = Simbad.query_objectids(starName)
+    otherIDs = mirrors.tryMirrors(
+        _getSimbadServers(),
+        lambda server: _queryObjectIDs(server, starName)
+    )
     if otherIDs is None:
         logger.warning(
             " ".join((
@@ -208,7 +246,10 @@ def getObjectID(
                 "all the other identificators"
             ))
         )
-        ids = Simbad.query_objectids(starName)
+        ids = mirrors.tryMirrors(
+            _getSimbadServers(),
+            lambda server: _queryObjectIDs(server, starName)
+        )
         if ids is None:
             logger.warning(
                 " ".join((
