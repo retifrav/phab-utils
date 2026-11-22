@@ -2,10 +2,11 @@
 Mathematical statistics.
 """
 
+from collections.abc import Hashable
+
 import numpy
 import pandas
 
-from typing import List, Hashable
 
 def findOutliers(
     srs: pandas.Series,
@@ -119,16 +120,16 @@ def findOutliers(
     # NaNs and INFs are not outliers
     # print(tbl["finite"].loc[lambda x: x == False].index)
     tbl.loc[
-        tbl["finite"] == False,  # noqa: E712
+        tbl["finite"] == False,
         "outliers"
     ] = False
 
     tableFinite = tbl[
-        tbl["finite"] == True  # noqa: E712
+        tbl["finite"] == True
     ].iloc[:, 0]
 
-    med = numpy.median(tableFinite.values)  # type:ignore[arg-type] # ya hz
-    sig = 1.48 * numpy.median(numpy.abs(tableFinite - med))  # type:ignore[operator] # ya hz
+    med = numpy.median(tableFinite.values)
+    sig = 1.48 * numpy.median(numpy.abs(tableFinite - med))
 
     for i, v in tableFinite.items():
         if v > med - sigma * sig:
@@ -164,9 +165,9 @@ def findOutliers(
         # intuitively it should be `False`, but we need to account
         # for possible neighbours from the very start
         countingSincePreviousOutlier: bool = True
-        potentialNeighbourOutliers: List[Hashable] = []
+        potentialNeighbourOutliers: list[Hashable] = []
         for i, v in outlrs.items():
-            if v == True:  # noqa: E712
+            if v == True:
                 if countingSincePreviousOutlier:
                     # make all the previous elements to be outliers too
                     for pno in potentialNeighbourOutliers:

@@ -1,11 +1,13 @@
+import pathlib
+import tempfile
+
+import numpy
+import pandas
 import pytest
 
-import tempfile
-import pathlib
-import pandas
-import numpy
+from utils.files import file as fl
+from utils.files import pickle
 
-from utils.files import file as fl, pickle
 from . import somethingThatDoesntExist
 
 
@@ -58,6 +60,17 @@ def test_open_pickle_as_pandas_table() -> None:
     assert tbl.index[3] == "CoRoT-24 c"
 
 
+def test_open_pickle_as_pandas_table_not_a_table() -> None:
+    with tempfile.TemporaryDirectory() as tempDir:
+        tempFilePath = pathlib.Path(tempDir) / "series.pkl"
+        pandas.Series([1, 2, 3]).to_pickle(tempFilePath)
+        with pytest.raises(
+            ValueError,
+            match=r"^Provided pickle \[.*\] contains .* instead of a Pandas table$"
+        ):
+            pickle.openPickleAsPandasTable(tempFilePath)
+
+
 def test_save_pandas_table_as_pickle() -> None:
     rng = numpy.random.default_rng()
     tbl = pandas.DataFrame(
@@ -91,5 +104,5 @@ def test_merge_pickles_save_to_file() -> None:
             "./data/merge-pickles/",
             tempFilePath
         )
-        assert isinstance(rslt, type(None))
+        assert rslt is None
         assert tempFilePath.exists()

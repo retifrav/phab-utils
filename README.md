@@ -15,6 +15,7 @@ Original project name was `uio-exoplanet-group`, which later got renamed to `pha
     - [API](#api)
     - [wiki](#wiki)
 - [Tests](#tests)
+- [Linting and type checking](#linting-and-type-checking)
 
 <!-- /MarkdownTOC -->
 
@@ -107,3 +108,28 @@ $ python -m pytest ./src/phab/tests/*[^_*].py
 $ python -m pytest ./src/phab/tests/databases.py
 $ python -m pytest ./src/phab/tests/databases.py -k "test_get_parameters_that_are_double_in_nasa"
 ```
+
+## Linting and type checking
+
+The code is checked with [ruff](https://docs.astral.sh/ruff/) (*linting*) and [ty](https://docs.astral.sh/ty/) (*type checking*). Both are configured in `pyproject.toml`, so they need no extra options, but they should be run from the repository root.
+
+`ty` might need a virtual environment (*venv*) with the dependencies installed so it could check how the code uses them. It should run without venv too, but then the dependencies are likely to be unknown to it, so it might miss actual problems. A virtual environment in `.venv` in the repository root is found by `ty` automatically:
+
+``` sh
+$ cd /path/to/phab-utils/
+$ uv venv --python 3.12 .venv
+$ uv pip install --python .venv -e . pytest
+
+$ uvx ruff@0.17.6 check
+$ uvx ty@0.0.107 check --error-on-warning
+
+$ rm -r .venv
+$ rm -r src/phab_utils.egg-info
+```
+
+Some notes:
+
+- the tool versions are pinned on purpose. New `ruff` versions might add new rules to its default set, and `ty` is not stable yet (*it is still `0.0.x`*), so its rules change quite often. Without pinning, the checks might start failing on a new version of the tools for commits that didn't change anything;
+- `pytest` is installed for its types, other dependencies are installed from `setup.cfg`;
+- `--error-on-warning` makes ty fail on warnings too (*such as deprecations*);
+- don't use `ruff format`, as the code isn't formatted with it.

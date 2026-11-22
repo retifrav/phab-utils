@@ -1,5 +1,6 @@
 
-from utils.strings import extraction, conversion
+from utils.strings import conversion, extraction
+
 from . import somethingThatDoesntExist  # noqa: F401
 
 
@@ -14,11 +15,10 @@ def test_ref_from_full_reference_nasa(
     ref = extraction.adsRefFromFullReferenceNASA(
         somethingThatDoesntExist
     )
-    assert ref is None, \
-        " ".join((
-            "There can't be a reference value in",
-            f"\"{somethingThatDoesntExist}\" string"
-        ))
+    assert ref is None, (
+        "There can't be a reference value in "
+        f"\"{somethingThatDoesntExist}\" string"
+    )
 
 
 def test_float_to_string_for_adql_cast_varchar() -> None:

@@ -6,12 +6,10 @@ import pathlib
 
 from ..logs.log import logger
 
-from typing import Union, Optional
-
 
 def directoryExists(
-    directoryCandidate: Union[str, pathlib.Path]
-) -> Optional[pathlib.Path]:
+    directoryCandidate: str | pathlib.Path
+) -> pathlib.Path | None:
     """
     Check whether provided path exists and is a directory.
 
@@ -37,10 +35,10 @@ def directoryExists(
     elif isinstance(directoryCandidate, pathlib.Path):
         directoryPath = directoryCandidate
     else:
-        msg = " ".join((
-            "Unsupported type of the directory path:",
-            type(directoryCandidate)
-        ))
+        msg = (
+            "Unsupported type of the directory path: "
+            f"{type(directoryCandidate)}"
+        )
         logger.error(msg)
         # raise ValueError(msg)
         return None
@@ -61,8 +59,8 @@ def directoryExists(
 
 
 def fileExists(
-    fileCandidate: Union[str, pathlib.Path]
-) -> Optional[pathlib.Path]:
+    fileCandidate: str | pathlib.Path
+) -> pathlib.Path | None:
     """
     Check whether provided path exists and is a file.
 
@@ -88,10 +86,10 @@ def fileExists(
     elif isinstance(fileCandidate, pathlib.Path):
         filePath = fileCandidate
     else:
-        msg = " ".join((
-            "Unsupported type of the file path:",
-            type(fileCandidate)
-        ))
+        msg = (
+            "Unsupported type of the file path: "
+            f"{type(fileCandidate)}"
+        )
         logger.error(msg)
         # raise ValueError(msg)
         return None

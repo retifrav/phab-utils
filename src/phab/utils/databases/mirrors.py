@@ -11,28 +11,15 @@ more details in the Known problems section of `utils.databases`.
 """
 
 import time
-
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from contextvars import ContextVar
-from typing import (
-    Optional,
-    Callable,
-    Dict,
-    Iterator,
-    List,
-    Tuple,
-    Type,
-    TypeVar,
-    Union
-)
 
 from pyvo.dal import DALProtocolError
 from requests import PreparedRequest, Response, Session
 from requests.adapters import HTTPAdapter
 
 from ..logs.log import logger
-
-_T = TypeVar("_T")
 
 mainServerConnectTimeout: float = 5
 """
@@ -53,7 +40,7 @@ of queries doesn't wait `mainServerConnectTimeout` on every one of them. After t
 is tried first again. Set it to `0` to try the main server on every call.
 """
 
-unavailableErrors: Tuple[Type[Exception], ...] = (DALProtocolError, OSError)
+unavailableErrors: tuple[type[Exception], ...] = (DALProtocolError, OSError)
 """
 Errors meaning that a server is down or unreachable, so a mirror might still answer. PyVO raises
 `DALProtocolError` subclasses for those: HTTP errors (*such as a 404 page*) become `DALServiceError`,
@@ -64,13 +51,13 @@ error or a timeout from `requests` that PyVO lets through as it is. Errors in th
 
 # connect timeout (in seconds) of the current `tryMirrors()` attempt, which `ConnectTimeoutAdapter` applies,
 # `None` meaning no timeout
-_attemptConnectTimeout: ContextVar[Optional[float]] = ContextVar(
+_attemptConnectTimeout: ContextVar[float | None] = ContextVar(
     "attemptConnectTimeout",
     default=None
 )
 
 # main server -> `time.monotonic()` of its last failure
-_mainServerFailures: Dict[str, float] = {}
+_mainServerFailures: dict[str, float] = {}
 
 
 class ConnectTimeoutAdapter(HTTPAdapter):
@@ -83,16 +70,12 @@ class ConnectTimeoutAdapter(HTTPAdapter):
         self,
         request: PreparedRequest,
         stream: bool = False,
-        timeout: Union[
-            None,
-            float,
-            Tuple[Optional[float], Optional[float]]
-        ] = None,
-        verify: Union[bool, str] = True,
-        cert: Union[None, str, Tuple[str, str]] = None,
-        proxies: Optional[Dict[str, str]] = None
+        timeout: None | float | tuple[float | None, float | None] = None,
+        verify: bool | str = True,
+        cert: None | str | tuple[str, str] = None,
+        proxies: dict[str, str] | None = None
     ) -> Response:
-        connectTimeout: Optional[float] = _attemptConnectTimeout.get()
+        connectTimeout: float | None = _attemptConnectTimeout.get()
         if timeout is None and connectTimeout is not None:
             # a (connect, read) pair, `None` being no limit
             timeout = (connectTimeout, None)
@@ -131,7 +114,7 @@ def addConnectTimeout(session: Session) -> Session:
 
 
 @contextmanager
-def _connectTimeout(seconds: float) -> Iterator[None]:
+def _connectTimeout(seconds: float) -> Generator[None, None, None]:
     token = _attemptConnectTimeout.set(seconds)
     try:
         yield
@@ -139,7 +122,7 @@ def _connectTimeout(seconds: float) -> Iterator[None]:
         _attemptConnectTimeout.reset(token)
 
 
-def tryMirrors(servers: List[str], attempt: Callable[[str], _T]) -> _T:
+def tryMirrors[T](servers: list[str], attempt: Callable[[str], T]) -> T:
     """
     Calls `attempt` with each of the `servers` in turn until one of them is available
     (*fails with none of the `unavailableErrors`*).
@@ -177,20 +160,18 @@ def tryMirrors(servers: List[str], attempt: Callable[[str], _T]) -> _T:
 
     mainServer: str = servers[0]
     skipMainServer: bool = False
-    failedAt: Optional[float] = _mainServerFailures.get(mainServer)
+    failedAt: float | None = _mainServerFailures.get(mainServer)
     if failedAt is not None:
         sinceFailure: float = time.monotonic() - failedAt
         if sinceFailure < mainServerCooldown:
             skipMainServer = True
             logger.debug(
-                " ".join((
-                    f"Skipping [{mainServer}], it was unavailable",
-                    f"{sinceFailure:.0f} s ago, and it will be tried again",
-                    f"in {mainServerCooldown - sinceFailure:.0f} s"
-                ))
+                f"Skipping [{mainServer}], it was unavailable "
+                f"{sinceFailure:.0f} s ago, and it will be tried again "
+                f"in {mainServerCooldown - sinceFailure:.0f} s"
             )
 
-    serversToTry: List[str] = servers[1:] if skipMainServer else servers
+    serversToTry: list[str] = servers[1:] if skipMainServer else servers
     # whether some server has failed in this call, so the mirror that answered
     # after it is worth an info message
     fellBack: bool = False
@@ -200,7 +181,7 @@ def tryMirrors(servers: List[str], attempt: Callable[[str], _T]) -> _T:
         try:
             if tryingMainServer:
                 with _connectTimeout(mainServerConnectTimeout):
-                    result: _T = attempt(server)
+                    result: T = attempt(server)
             else:
                 result = attempt(server)
         except unavailableErrors as ex:
@@ -208,16 +189,14 @@ def tryMirrors(servers: List[str], attempt: Callable[[str], _T]) -> _T:
             if tryingMainServer:
                 _mainServerFailures[mainServer] = time.monotonic()
                 if mainServerCooldown > 0:
-                    skipNote = "".join((
-                        ", it will be skipped for the next",
-                        f" {mainServerCooldown:g} s"
-                    ))
+                    skipNote = (
+                        ", it will be skipped for the next "
+                        f"{mainServerCooldown:g} s"
+                    )
             logger.warning(
-                " ".join((
-                    f"[{server}] is unavailable,",
-                    f"falling back to [{serversToTry[i + 1]}]{skipNote}.",
-                    f"{type(ex).__name__}: {ex}"
-                ))
+                f"[{server}] is unavailable, "
+                f"falling back to [{serversToTry[i + 1]}]{skipNote}. "
+                f"{type(ex).__name__}: {ex}"
             )
             fellBack = True
             continue

@@ -2,16 +2,16 @@
 Getting light curves data.
 """
 
-import lightkurve
-from astropy.table import Table
-import pandas
-from pandera import pandas as pandera
-import numpy
 import pathlib
 import re
-from packaging.version import Version
+from re import Pattern
+from typing import Literal
 
-from typing import Optional, Dict, List, Pattern, Literal
+import lightkurve
+import numpy
+import pandas
+from astropy.table import Table
+from pandera import pandas as pandera
 
 from ..files import file as fl
 from ..logs.log import logger
@@ -22,7 +22,7 @@ from ..logs.log import logger
 # there are actually more authors available,
 # but we are only interested in these
 #
-authors: Dict[str, Dict] = {
+authors: dict[str, dict] = {
     "Kepler":
     {
         "mission": "Kepler",
@@ -64,7 +64,7 @@ authors: Dict[str, Dict] = {
 Dictionary of authors, their cadence values and mapping to missions.
 """
 
-missionSectorRegExes: Dict[str, Pattern] = {
+missionSectorRegExes: dict[str, Pattern] = {
     "Kepler": re.compile(
         r"^Kepler\s\w+\s(\d+)$"  # Kepler Quarter 15
     ),
@@ -97,7 +97,7 @@ Table schema for light curve fluxes.
 def getLightCurveStats(
     starName: str,
     detailed: bool = True
-) -> Dict[str, Dict]:
+) -> dict[str, dict]:
     """
     Gather statistics about available cadence values for a given star.
 
@@ -159,7 +159,7 @@ def getLightCurveStats(
                         print(f"- {s}: {bySectors[s]}")
     ```
     """
-    stats: Dict[str, Dict] = {}
+    stats: dict[str, dict] = {}
 
     lghtcrvs = lightkurve.search_lightcurve(
         starName,
@@ -171,9 +171,9 @@ def getLightCurveStats(
         ]
         logger.debug(tbl)
 
-        author: str  # for mypy, but even then it is not happy with something else
-        for author, group in (tbl.groupby("author")):  # type:ignore[assignment] # ya hz
-            if author not in authors:
+        for author, group in tbl.groupby("author"):
+            # the `isinstance()` narrows the `Hashable` group key down to `str`
+            if not isinstance(author, str) or author not in authors:
                 raise ValueError(f"Unknown author: {author}")
             mission = authors[author]["mission"]
             if not stats.get(mission):
@@ -181,7 +181,7 @@ def getLightCurveStats(
             for cadence in ["long", "short", "fast"]:
                 if cadence in authors[author]["cadence"]:
                     stats[mission][cadence] = {}
-                    cadenceValues: List[int] = (
+                    cadenceValues: list[int] = (
                         authors[author]["cadence"][cadence]
                     )
                     cadences: pandas.DataFrame
@@ -207,10 +207,8 @@ def getLightCurveStats(
                             )
                             if not sectorMatch:
                                 raise ValueError(
-                                    " ".join((
-                                        "Couldn't extract sector from",
-                                        f"this mission value: {m}"
-                                    ))
+                                    "Couldn't extract sector from "
+                                    f"this mission value: {m}"
                                 )
                             sector = sectorMatch.group(1)
                             if not stats[mission][cadence]["by-sectors"].get(
@@ -239,7 +237,7 @@ def getLightCurveStats(
 
 def getLightCurveIDs(
     starName: str
-) -> Dict[str, List[str]]:
+) -> dict[str, list[str]]:
     """
     Based on available cadence values statistics for a given star,
     get names of missions and cadences. For instance, in order to pass
@@ -276,9 +274,9 @@ def getLightCurveIDs(
             #print(flc)
     ```
     """
-    lightCurveIDs: Dict[str, List[str]] = {}
+    lightCurveIDs: dict[str, list[str]] = {}
 
-    stats: Dict[str, Dict] = getLightCurveStats(
+    stats: dict[str, dict] = getLightCurveStats(
         starName,
         detailed=False
     )
@@ -290,19 +288,18 @@ def getLightCurveIDs(
     # if there is fast or short cadence available
     cadencePriority = ["fast", "short", "long"]
 
-    for m in stats.keys():
+    for m, missionStats in stats.items():
         lightCurveIDs[m] = []
-        priorityThreshold = 0
-        for cp in cadencePriority:
+        for priorityThreshold, cp in enumerate(cadencePriority):
             # if there is already fast or short cadence in the list,
             # don't take long cadence (except for mission K2, because
             # its long cadence is what's most important even if
             # there are also fast and short ones)
             if any(lightCurveIDs[m]) and priorityThreshold > 1 and m != "K2":
                 break
-            if cp in stats[m]:
-                # print(f"Count [{cp}]: {stats[m][cp]['total']}")
-                totalCnt = stats[m][cp].get("total")
+            if cp in missionStats:
+                # print(f"Count [{cp}]: {missionStats[cp]['total']}")
+                totalCnt = missionStats[cp].get("total")
                 if totalCnt and totalCnt != 0:
                     lightCurveIDs[m].append(cp)
                 # else:
@@ -312,14 +309,13 @@ def getLightCurveIDs(
                 #             f"in [{m}] is 0 (or missing)"
                 #         ))
                 #     )
-            priorityThreshold += 1
 
     return lightCurveIDs
 
 
 def fitsToPandas(
     fitsFilePath: str,
-    fitsType: Optional[Literal["tess", "kepler"]] = None,
+    fitsType: Literal["tess", "kepler"] | None = None,
     qualityBitmask: Literal["none", "default", "hard", "hardest"] = "default",
     dropNanTimes: bool = True,
     convertTimesToSeconds: bool = False
@@ -329,7 +325,9 @@ def fitsToPandas(
     and create a Pandas table from it. Only the fluxes, their times
     and errors columns are taken.
 
-    Handles the big/little endians problem when converting from FITS to Pandas.
+    FITS stores data in big-endian byte order, but the resulting table
+    has its columns in the native byte order of the system, as Astropy
+    converts them already.
 
     Example:
 
@@ -348,7 +346,7 @@ def fitsToPandas(
     ```
     """
     lc = None
-    fitsFile: Optional[pathlib.Path] = fl.fileExists(fitsFilePath)
+    fitsFile: pathlib.Path | None = fl.fileExists(fitsFilePath)
     if fitsFile is None:
         raise ValueError(
             f"Provided path to [{fitsFilePath}] seems to be wrong"
@@ -371,33 +369,24 @@ def fitsToPandas(
             )
         else:
             print(
-                " ".join((
-                    "[WARNING] Unknown FITS type, don't know",
-                    "which quality mask to use"
-                ))
+                "[WARNING] Unknown FITS type, don't know "
+                "which quality mask to use"
             )
         lc = lc[msk]
 
+    # FITS stores data in big-endian byte order, and so do the columns
+    # of `lc`, but this array is already in the native byte order of the system,
+    # because `Table.as_array()` (which is what `numpy.array()` gets) converts
+    # all columns to native since Astropy 1.1, so there is nothing to swap
     narr = numpy.array(lc)
-    # FITS stores data in big-endian, but pandas works with little-endian,
-    # so the byte order needs to be swapped
-    # https://stackoverflow.com/a/30284033/1688203
-    if Version(numpy.__version__) > Version("1.26.4"):
-        # if that doesn't work, then you might need to downgrade to 1.26.4
-        narr = narr.view(narr.dtype.newbyteorder()).byteswap()
-    else:
-        # have to ignore this in mypy
-        narr = narr.byteswap().newbyteorder()  # type: ignore[attr-defined]
 
     # astropy.time does not(?) support NaN
     if dropNanTimes:
         nantimes = numpy.isnan(narr["TIME"].data)
         if numpy.any(nantimes):
             print(
-                " ".join((
-                    f"[DEBUG] {numpy.sum(nantimes)} rows were excluded,",
-                    "because their time values are NaN"
-                ))
+                f"[DEBUG] {numpy.sum(nantimes)} rows were excluded, "
+                "because their time values are NaN"
             )
         narr = narr[~nantimes]
 
@@ -445,7 +434,7 @@ def lightCurveTessToPandas(
     it does almost the same thing as
     `utils.databases.lightcurves.fitsToPandas()`,
     but here there it uses a TESS-specific reading function, and also
-    there is no need to drop NaN times "manually" (*and fiddle with endians?*).
+    there is no need to drop NaN times "manually".
 
     Example:
 

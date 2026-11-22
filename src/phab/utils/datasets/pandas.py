@@ -10,14 +10,13 @@ from phab.utils.datasets import pandas as pnd
 Otherwise it will collide with the `pandas` module itself.
 """
 
-import pandas
 
-from typing import Optional, List, Union
+import pandas
 
 from ..logs.log import logger
 
 
-def mergeTables(frames: List[pandas.DataFrame]) -> pandas.DataFrame:
+def mergeTables(frames: list[pandas.DataFrame]) -> pandas.DataFrame:
     """
     Merge (*concatenate*) several tables into one. Sorts the index
     and verifies integrity (*will raise an exception
@@ -104,7 +103,7 @@ def deduplicateTable(
     ```
     """
     duplicateRows = tbl.duplicated()
-    duplicateRows = duplicateRows[duplicateRows].index  # type:ignore[assignment] # pizdit
+    duplicateRows = duplicateRows[duplicateRows].index
 
     logger.debug(f"Unique rows count: {len(tbl) - len(duplicateRows)}")
     logger.debug(f"Duplicate rows count: {len(duplicateRows)}")
@@ -121,7 +120,7 @@ def deduplicateTable(
 def dropMeaninglessRows(
     tbl: pandas.DataFrame,
     # the types in Union can be extended with whatever else is supported
-    indicatorColumn: Optional[Union[str, int, float]] = None
+    indicatorColumn: str | float | None = None
 ) -> pandas.DataFrame:
     """
     Drop/remove meaningless rows from the table. For instance, if a table

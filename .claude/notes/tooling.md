@@ -1,0 +1,90 @@
+# Tooling measurements
+
+Evidence behind the Commands rules in `CLAUDE.md`. Measured on 2026-11-22 in the x86_64 (Arch host) container, when mypy was replaced with ty and ruff, the Python floor went to 3.12 and the license became an SPDX expression, following what tap-adql-sandbox did in its commits `4b61158` and `39f6095`. Tools: ruff 0.17.6, ty 0.0.107, uv 0.13.9. Dependencies came from `/tmp/phab-venv` (Python 3.14.7, pandas 3.1.1, NumPy 2.5.5, astropy 8.0.3, astroquery 0.4.11, PyVO 1.10.0, lightkurve 2.5.1, pandera 0.36.0, requests 2.34.2).
+
+## mypy (history)
+
+- `mypy.ini` had `ignore_missing_imports`, `check_untyped_defs`, `strict_optional` and `disallow_untyped_defs`. Right before the switch, `python -m mypy ./src/phab` (mypy 2.4.1 in the venv) → `Success: no issues found in 27 source files`.
+- ty checks unannotated bodies and is strict about `None` anyway, so only `disallow_untyped_defs` needed a replacement: ruff's `ANN` rules (see below).
+- The gitignored `.mypy_cache/` (73 MB, entries for 3.13 and 3.14) was deleted. `/tmp/phab-venv` still has mypy installed from before, and nothing uses it.
+
+## ruff
+
+- Before the switch there was no ruff config at all, and the code was clean under the classic default set `E4,E7,E9,F`.
+- ruff infers the target only from `[project].requires-python`, and this project keeps its metadata in `setup.cfg` with no `[project]` table, so `target-version` has to be explicit.
+- Before the switch, `ruff check --target-version py312` with ruff's default rules reported 175 findings: `UP006` ×56, `UP045` ×42, `UP035` ×22, `I001` ×19, `FLY002` ×13, `UP007` ×10, `RUF100` ×3, `PLC0206` ×2, `PYI041` ×2, and one each of `SIM113`, `SIM118`, `FURB168`, `B006`, `UP047` and `C408`. 138 of them were safe fixes.
+- `--select ANN` reported only 6 × `ANN401`, all on functions returning `Any`: `_queryObjectIDs`, the NASA/PADC parameter getters and `getParameterFromNASA`. So the code already met everything mypy's `disallow_untyped_defs` enforced, and `extend-select = ["ANN"]` with `ANN401` ignored (user's decision) carries that over without code changes. mypy itself allowed an explicit `Any`.
+- `RUF100` flagged three `# noqa: E712` on pandas `== False`/`== True` comparisons in `statistics.py`. They compare elementwise, so `is` would be wrong. `E712` is no longer in the default set, so the comments went and the comparisons stayed.
+- `I001` with the default `src = [".", "src"]` merged the tests' `from utils…` imports into the third-party group (seen with `--diff`). With `src/phab` added, they get a first-party group of their own. The commented-out `# import json` in `tasks/reconfirming_stellar_parameters.py` stayed attached above the imports.
+- `PYI041` turned `int | float` into `float` in two signatures (`getPlanetaryParameterReferenceFromNASA`, `_doubleRangeConditionForADQL`), and `Optional[Union[str, int, float]]` became `str | float | None` in `datasets/pandas.py`.
+- `B006` was fixed with `problematicIdentifiersPrefixes: Sequence[str] = ("SZ",)` instead of ruff's suggested `None` default. Callers can still pass lists, the body's `tuple(…)` is unchanged, and pdoc still shows the default.
+- `UP047` (PEP 695) and `C408` are unsafe fixes, and `PLC0206`/`SIM113` have no fix at all, so all four were done by hand. `SIM113`'s `enumerate` is equivalent because that loop has no `continue`.
+- After the switch, `ruff check` → `All checks passed!`. `ruff format --check` → 19 files would be reformatted, 28 already formatted, and formatting was not part of the switch.
+
+## The join rewrite
+
+- The code had 51 calls of the form `"sep".join((…))` on a fixed tuple: 50 with `" "`, 1 with `""`. Another 9 were in comments and docstring examples, and those were left alone. `FLY002` flagged 13 of the 51. Which ones it skips and why wasn't investigated. 8 had computed elements: 3 conditional fragments in `tap.py`, a `_doubleRangeConditionForADQL()` call, two `", ".join(…colnames)` calls and two `type(…)` calls. The user decided to convert all 51, as in tap-adql-sandbox.
+- 43 were rewritten by a script. It appended the separator to each fragment's closing quote, dropped the commas and the wrapper, and joined `assert x, \` continuations into `assert x, (`. The other 8 were rewritten by hand.
+- Proof for 45 of them: the `git show HEAD:` version of each file, with every fixed-tuple join folded into the equivalent `Constant`/`JoinedStr` node (adjacent constants merged), was `ast.dump`-identical to the working tree version. The comparison excluded the three functions with hoisted conditionals, `getStellarParameterFromNASA`, `getPlanetaryParameterFromNASA` and `getPlanetaryParameterReferenceFromNASA`. A negative test, one space removed from `_version.py`, was reported as `DIFF`.
+- Proof for the 6 sites in those three functions (4 queries and 2 `logger.warning` messages): `queryService` and `logger.warning` were patched to record their strings, with `queryService` returning `None`. The old (`git archive HEAD`) and new modules then produced the same 14 strings, 10 queries and 4 warnings. They covered both `parameterTypeIsDouble` branches, string and numeric values, and the range retry for positive and negative doubles.
+- `files/file.py` joined a `type` object into its error message, so an unsupported path type raised `TypeError: sequence item 1: expected str instance, type found` (reproduced on `HEAD`) instead of being logged. The f-string fixed that.
+
+## ty
+
+- Without config, the container-side `ty check` reported 36 diagnostics. 35 were `import-not-found`, for pandas ×9, numpy ×6, pytest ×5, requests ×2, lightkurve ×2, astroquery.simbad ×2, and setuptools, requests.adapters, pyvo, pyvo.dal, pyvo.dal.exceptions, pyvo.utils.http, pandera, astroquery and astropy.table once each. The 36th was the `deprecated` warning below. `packaging` resolves from Debian's `/usr/lib/python3/dist-packages`.
+- The tests' `from utils…` imports and the `except ImportError` branch in `tasks/` produce no diagnostic, even though `-vv` logs ``Module `utils.strings` not found in search paths``. The first-party roots are `./src` and `.`, and ty resolves these imports through its fallback anyway, so no `environment.root` entry for `src/phab` is needed.
+- Against the venv (`ty check --python /tmp/phab-venv`) it reported 5 diagnostics, none of which mypy had reported:
+  - `setup.py`: `setuptools` was not found, because uv venvs don't have it. Fixed with the `setuptools.**` glob.
+  - `lightcurves.py`: a `groupby` key is `Hashable`, which is not assignable to the predeclared `author: str` (mypy had needed a `type:ignore[assignment]` there). Fixed with `isinstance(author, str)` in the existing unknown-author check. Lightkurve's authors are strings, so the behaviour is unchanged.
+  - `lightcurves.py`: `missing-attribute` for `ndarray.newbyteorder()`, which NumPy 2 removed, in the branch for NumPy ≤ 1.26.4. A `# ty: ignore[missing-attribute]` silenced it in the venv run, but the container run then reported `unused-ignore-comment`, because NumPy is unresolved there. `cast(Any, narr.byteswap()).newbyteorder()` passed both runs. Later the same day the user had the whole version branch removed, and then the swap itself, which turned out to have nothing to swap. That took away the library's only `packaging` import; `packaging` now reaches the tests through pytest's own dependencies. See the Byte order section for the evidence.
+  - `mirrors.py`: `@contextmanager` with `-> Iterator[None]` is a deprecated overload. Fixed with `Generator[None, None, None]`. The short `Generator[None]` would be flagged by `UP043` only from target 3.13 on.
+  - `files/pickle.py`: `pandas.read_pickle` is typed `DataFrame | Series`, but the function promises a `DataFrame`. Fixed with an `isinstance` check that raises `ValueError` (user's decision), because the function's purpose is reading a Pandas table and `mergePickles` relies on it. There is a test for it in `tests/files.py`.
+- ty neither honours nor flags mypy-coded comments: with `-c 'analysis.respect-type-ignore-comments=false'` it reported the same 5 diagnostics, including two on lines that carried `# type: ignore[assignment]`/`[attr-defined]`. `unused-type-ignore-comment` (on by default) didn't flag the other seven, which suppressed nothing, so they were removed: `tests/databases.py` ×2, `tests/math.py` ×2, `statistics.py` ×2, `datasets/pandas.py` ×1.
+- After the switch, plain `ty check`, `ty check --python /tmp/phab-venv`, and the latter with `unused-ignore-comment`/`unused-type-ignore-comment` set to `error` → `All checks passed!`.
+- `-c 'rules.all="error"'` adds 49 opt-in diagnostics: `truthiness-test-of-none-union` ×19, `unsound-assignment` ×11, `unsound-return` ×7, `missing-type-argument` ×7, `redundant-condition-strict` ×4 and `missing-override-decorator` ×1. They weren't enabled.
+- A scratch subclass whose `send(self, request, **kwargs: Any)` overrides `HTTPAdapter.send` gets `incompatible-method-override` from ty, so `ConnectTimeoutAdapter.send` keeps the full signature.
+
+## Python floor
+
+- It was 3.8 in the metadata, but the real floor was 3.10, because `tap.py` used PEP 604 unions in signatures. It was raised to 3.12 in `python_requires`, the classifier, ruff `target-version` and ty `python-version`. The README mentions no Python version.
+- On a uv-managed Python 3.12.16, with the dependencies from the built wheel, the offline tests passed: 15 in `strings.py`, `math.py`, `datasets.py` and `files.py`, and 17 in `databases.py -k "mirrors or firewall or range_condition"`. The installed wheel imported every module, and `tryMirrors.__type_params__` was `(T,)`.
+
+## License metadata
+
+- `[build-system]` went from `setuptools>=42` plus `wheel` to `setuptools>=77`, which resolved to setuptools 84.2.1. `uv build` printed no `SetuptoolsDeprecationWarning`. tap-adql-sandbox's note has the warning the old classifier caused, and the `InvalidConfigError` you get when the classifier stays next to an expression.
+- The wheel's `METADATA` and the sdist's `PKG-INFO` both carry `Metadata-Version: 2.4`, `License-Expression: GPL-3.0-or-later`, `License-File: LICENSE`, `Dynamic: license-expression` and `Dynamic: license-file`. `LICENSE` lands in `dist-info/licenses/`.
+- The old classifier was the plain `GPLv3` one, and `LICENSE` is the plain GPLv3 text. `-or-later` was the user's instruction. No source file, README section or documentation page mentions the license.
+
+## Classifiers
+
+- Checked against trove-classifiers `main` (`src/trove_classifiers/__init__.py`) on 2026-11-22. Every classifier `setup.cfg` had is valid, and none is in `deprecated_classifiers`. The `License ::` one had to go anyway, because of PEP 639. As in tap-adql-sandbox, only the minimum Python version is listed. The newest Python classifier there is 3.16.
+
+## Build, docs and live tests
+
+- `uv build --out-dir <dir>` → `phab_utils-2026.1.9.tar.gz` and `phab_utils-2026.1.9-py3-none-any.whl` (32 entries). The sdist holds `LICENSE`, `MANIFEST.in`, `PKG-INFO`, `README.md`, `pyproject.toml`, `setup.cfg`, `setup.py` and `src/`. No `build/` was left in the tree, but the build refreshes the gitignored `src/phab_utils.egg-info` of the editable install.
+- pdoc 16.0.0 with the README command and a scratch `--output-directory` printed nothing at all. It renders `tryMirrors(servers: list[str], attempt: Callable[[str], T]) -> T` and `problematicIdentifiersPrefixes: Sequence[str] = ("SZ",)`.
+- The full `databases.py` (live services) passed 41 of 42, then hung for more than 10 minutes in the last test, `test_get_stellar_parameter`. Its process had an established connection to `slimbad.cfa.harvard.edu` (131.142.198.215) that never answered. The same two calls in a separate process finished in 13 s, and `-k test_get_stellar_parameter` then passed all 3 matching tests in 16 s. Mirrors deliberately get no read timeout (see `CLAUDE.md`), so a request that the server accepts but never answers blocks indefinitely.
+
+## Byte order in `fitsToPandas`
+
+Measured on 2026-11-22. That day the NumPy version branch was removed first, and then the byte swap itself.
+
+- Until then, `fitsToPandas` swapped the byte order of `numpy.array(lc)` with `narr.byteswap().newbyteorder()` on NumPy ≤ 1.26.4, and with `narr.view(narr.dtype.newbyteorder()).byteswap()` on anything newer (commit `d218ff1`). The comment said FITS stores big-endian data and pandas needs little-endian, with a link to https://stackoverflow.com/a/30284033/1688203.
+- With NumPy 1.26.4 (Python 3.12, astropy 7.2.4), both ways gave identical arrays for `data/tess2019006130736-s0007-0000000266744225-0131-s_lc.fits`: the same dtype and equal values in all 20 columns and 17612 rows, NaN included. That's why the NumPy 2 way first replaced the branch.
+- But there was nothing to swap. `Table.read` returns the FITS columns as big-endian (`TIME` is `>f8`), while `numpy.array(table)` is already native (byte order `=` in every field). So the swap turned a native array *into* a big-endian one. That held with both old paths, on NumPy 2.5.5 with astropy 8.0.3, on NumPy 1.26.4 with astropy 7.2.4 and on NumPy 1.26.4 with astropy 5.3.4.
+- Whether that reached the result depended on pandas. The function builds `pandas.DataFrame(narr)` and copies three columns into a new table. pandas 2.3.1, 2.3.3, 3.0.0 and 3.0.6 normalize a big-endian array to native there, so the output was `float64`/`float32` with or without the swap. pandas 3.1.0 (released 2026-10-22) and 3.1.1 keep the byte order, so with them `fitsToPandas` returned `>f8`/`>f4` columns (`time`, `flux`, `fluxError`). The only exception was `time` with `convertTimesToSeconds`, because the multiplication creates a new array. The 3.1.0 release notes mention big-endian fixes only for `datetime64`/`timedelta64` (#68342, #68565), nothing about floats. The values were correct either way, and the pandera schema (`numpy.float64`/`float32`, `coerce=False`) accepted the big-endian columns.
+- The swap came from https://stackoverflow.com/a/30284033/1688203 (2015-05-17). That answer reads the file with `astropy.io.fits`: `fits.getdata('data.fit')`, then `pd.DataFrame(np.array(d).byteswap().newbyteorder())`. That gives a `FITS_rec`, which `numpy.array` leaves big-endian (`>` measured), and the pandas of 2015 raised endianness errors on it. `Table.read` was used here from the start, so that problem never applied.
+- History: the swap was in the very first version of `fitsToPandas` (`6f5dff1`, 2025-07-24 15:53 +0200), already after `numpy.array(lc)`. 36 minutes later `d218ff1` added the NumPy version branch, because NumPy 2 removed `ndarray.newbyteorder()`, so the swap itself had failed with NumPy 2.
+- The user asked whether the platform played a part, macOS then versus Linux now. Very unlikely: macOS on Apple Silicon and on Intel, and Linux on x86_64 and arm64, are all little-endian, and the conversion is the same pure-Python code in astropy on every platform. macOS itself was not tested, because the container is Linux even on the macOS host.
+- With packages limited to what had been released before `6f5dff1` (`uv run --exclude-newer 2025-07-24T13:53:09Z`: Python 3.12, NumPy 2.3.1, pandas 2.3.1, pandera 0.25.0, astropy 7.1.0, lightkurve 2.5.1):
+  - `numpy.array(Table)` was native.
+  - Even a really big-endian `fits.getdata` array became native in `pandas.DataFrame()`, and `sort_values`, `query`, `groupby`, `rolling`, `set_index`/`loc` and `dropna` all worked on it.
+  - The July 2025 code's output was native.
+  - The current code (no swap) passes `-k "fits_to_pandas and False"` (4 cases).
+
+  So nothing in that stack needed the swap, and nothing failed without it.
+- Why: `Table.__array__` returns `self.as_array()`, and `as_array()` converts every non-native column to native unless it's given `keep_byteorder=True`. That arrived in astropy 1.1 (2015-12-11, astropy#4080). astropy's `CHANGES.rst` has it under 1.1's API changes: "``Table.as_array()`` always returns a structured array with each column in the system's native byte order". `astropy/table/table.py` at the `v1.0` tag already had `__array__` returning `as_array()`, but its `as_array()` had no byte order handling. At `v1.1` it has `keep_byteorder=False` and converts.
+- Decisions (user, 2026-11-22): drop the swap. An `astropy >= 1.1` pin in `install_requires` was added first and then removed again, because it can never select anything: the oldest astropy with a wheel for Python 3.12 is 5.3.4 (`uv pip compile --python-version 3.12 --only-binary :all: --resolution lowest-direct`, on both x86_64 and aarch64 manylinux). That one converts too: `numpy.array(Table)` was native with astropy 5.3.4 and NumPy 1.26.4.
+- After removing the swap, `fitsToPandas` was run on the TESS file for all 20 combinations of `fitsType` (`None`, `"tess"` with each of the 4 quality masks), `dropNanTimes` and `convertTimesToSeconds`. Before and after, `pandas.testing.assert_frame_equal(…, check_dtype=False)` passed for every combination, and every column is now native (`float64`, `float32`).
+- `test_fits_to_pandas_and_light_curve_tess_to_pandas` with the local file (`-k "fits_to_pandas and False"`, 4 cases) passes with NumPy 2.5.5 (pandas 3.1.1, astropy 8.0.3) and with NumPy 1.26.4 (pandas 3.0.6, astropy 7.2.4, lightkurve 2.5.1). It passed both after the branch removal and after the swap removal.
+- Without the swap, the pandas version no longer matters. The oldest pandas with a wheel for Python 3.12 is 2.1.1 (`uv pip compile --only-binary :all: --resolution lowest-direct`), and it needs `numpy<2`. The current `fitsToPandas` was run on Python 3.12 with pandas 2.1.1 (NumPy 1.26.4, astropy 7.2.4), 2.2.3, 2.3.3, 3.0.6 and 3.1.1 (NumPy 2.5.5, astropy 8.0.3), all with pandera 0.36.0. Each time, 16 option combinations gave only native columns (`float64`, `float32`), and `-k "fits_to_pandas and False"` passed its 4 cases. So `pandas` needs no version floor for this.

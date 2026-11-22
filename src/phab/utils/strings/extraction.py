@@ -1,7 +1,5 @@
 import re
 
-from typing import Optional
-
 regexRefNASA = re.compile(r"<a refstr=.* href=.*\/abs\/(.*)\/abstract.*<\/a>")
 """
 Regular expression for extracting short reference value from the full
@@ -9,7 +7,7 @@ reference string in NASA database.
 """
 
 
-def adsRefFromFullReferenceNASA(fullRefValue: str) -> Optional[str]:
+def adsRefFromFullReferenceNASA(fullRefValue: str) -> str | None:
     """
     Extract just the reference value from the full reference string.
 

@@ -1,6 +1,44 @@
 [build-system]
 requires = [
-    "setuptools>=42",
-    "wheel"
+    "setuptools>=77"
 ]
 build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+target-version = "py312"
+# pytest imports tests and sources as top-level `tests`/`utils` packages
+# from `src/phab`, so that is a first-party root too
+src = [".", "src", "src/phab"]
+
+[tool.ruff.lint]
+# on top of ruff's own default rule set
+extend-select = [
+    # every function has to be fully annotated,
+    # what disallow_untyped_defs of mypy used to enforce
+    "ANN"
+]
+ignore = [
+    # values of arbitrary parameters from TAP services
+    # are returned as Any on purpose
+    "ANN401"
+]
+
+[tool.ty.environment]
+python-version = "3.12"
+
+[tool.ty.analysis]
+# dependencies might not be installed where ty runs,
+# the same role as the former ignore_missing_imports of mypy
+allowed-unresolved-imports = [
+    "astropy.**",
+    "astroquery.**",
+    "lightkurve.**",
+    "numpy.**",
+    "packaging.**",
+    "pandas.**",
+    "pandera.**",
+    "pytest.**",
+    "pyvo.**",
+    "requests.**",
+    "setuptools.**"
+]

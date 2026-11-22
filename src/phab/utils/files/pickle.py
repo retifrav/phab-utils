@@ -3,9 +3,8 @@ File operations with [pickles](https://docs.python.org/3/library/pickle.html).
 """
 
 import pathlib
-import pandas
 
-from typing import Optional, Union
+import pandas
 
 from ..datasets import pandas as pnd
 from ..files import file as fl
@@ -13,11 +12,13 @@ from ..logs.log import logger
 
 
 def openPickleAsPandasTable(
-    pickleFilePath: Union[str, pathlib.Path]
+    pickleFilePath: str | pathlib.Path
 ) -> pandas.DataFrame:
     """
     Read [Pandas](https://pandas.pydata.org) table from provided pickle file
     (*after checking that the file exists and that it is actually a file*).
+    Raises `ValueError`, if the pickle contains something else than
+    a Pandas table.
 
     Example:
 
@@ -28,18 +29,24 @@ def openPickleAsPandasTable(
     #print(pnd.head(15))
     ```
     """
-    pickleFile: Optional[pathlib.Path] = fl.fileExists(pickleFilePath)
+    pickleFile: pathlib.Path | None = fl.fileExists(pickleFilePath)
     if pickleFile is None:
         raise ValueError(
             f"Provided path to [{pickleFilePath}] seems to be wrong"
         )
     else:
-        return pandas.read_pickle(pickleFile)
+        table = pandas.read_pickle(pickleFile)
+        if not isinstance(table, pandas.DataFrame):
+            raise ValueError(
+                f"Provided pickle [{pickleFile}] contains "
+                f"{type(table)} instead of a Pandas table"
+            )
+        return table
 
 
 def savePandasTableAsPickle(
     pandasTable: pandas.DataFrame,
-    pickleFilePath: Union[str, pathlib.Path]
+    pickleFilePath: str | pathlib.Path
 ) -> None:
     """
     Save [Pandas](https://pandas.pydata.org) table to a pickle file.
@@ -63,9 +70,9 @@ def savePandasTableAsPickle(
 
 
 def mergePickles(
-    picklesToMergePath: Union[str, pathlib.Path],
-    resultingPicklePath: Union[None, str, pathlib.Path]
-) -> Optional[pandas.DataFrame]:
+    picklesToMergePath: str | pathlib.Path,
+    resultingPicklePath: None | str | pathlib.Path
+) -> pandas.DataFrame | None:
     """
     Merge several pickle files into one. Looks for pickle files (*`*.pkl`*)
     in the provided folder, reads them to [Pandas](https://pandas.pydata.org)
@@ -96,7 +103,7 @@ def mergePickles(
     ```
     """
     picklesToMerge = None
-    inputPath: Optional[pathlib.Path] = fl.directoryExists(picklesToMergePath)
+    inputPath: pathlib.Path | None = fl.directoryExists(picklesToMergePath)
     if inputPath is None:
         raise ValueError(
             f"Provided path to [{picklesToMergePath}] seems to be wrong"

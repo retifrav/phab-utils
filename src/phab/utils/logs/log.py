@@ -2,8 +2,8 @@
 Logging customization.
 """
 
-import sys
 import logging
+import sys
 
 from . import debugMode
 

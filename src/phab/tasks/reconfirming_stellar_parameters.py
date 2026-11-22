@@ -3,26 +3,25 @@ Reconfirming stellar parameters, enriching original datasets
 with additional data from various data sources.
 """
 
-import pandas
-import numpy
 # import json
 
-from typing import Optional, List, Dict
+import numpy
+import pandas
 
 try:
-    from ..utils.databases import tap, simbad
+    from ..utils.databases import simbad, tap
 except ImportError:
     # what the hell is even that, for using the installed package
     # imports need to be done way, but for generating documentation
     # with pdoc it needs to be a different way
-    from utils.databases import tap, simbad
+    from utils.databases import simbad, tap
 
 
 def lookForParametersInGaia(
     originalTable: pandas.DataFrame,
     adqlTable: str,
-    adqlParameters: List[str],
-    simbadIDversion: Optional[str] = None
+    adqlParameters: list[str],
+    simbadIDversion: str | None = None
 ) -> pandas.DataFrame:
     """
     Looking for specified parameters in GAIA database:
@@ -77,7 +76,7 @@ def lookForParametersInGaia(
 
     print("\nGetting GAIA IDs from SIMBAD...\n")
 
-    stars: Dict[str, Optional[str]] = {}
+    stars: dict[str, str | None] = {}
     for star in starNames:
         oid = simbad.findIdentificatorFromAnotherCatalogue(
             star,
@@ -98,16 +97,15 @@ def lookForParametersInGaia(
         originalTable[parameter] = numpy.array(numpy.nan, dtype=float)
 
     foundCnt = 0
-    for star in stars:
-        gaiaID = stars[star]
+    for star, gaiaID in stars.items():
         print(f"- {star} | {gaiaID}...")
         resultsGAIA = tap.queryService(
             tap.getServiceEndpoint("gaia"),
-            " ".join((
-                f"SELECT {', '.join(adqlParameters)}",
-                f"FROM {adqlTable}",
+            (
+                f"SELECT {', '.join(adqlParameters)} "
+                f"FROM {adqlTable} "
                 f"WHERE source_id = {gaiaID}"
-            ))
+            )
         )
         if resultsGAIA is None:
             print(f"- [WARNING] did not found anything in GAIA for [{gaiaID}]")
@@ -116,10 +114,8 @@ def lookForParametersInGaia(
             foundCnt += 1
             if len(tbl) > 1:
                 print(
-                    " ".join((
-                        "- [WARNING] GAIA has more than one record",
-                        f"for ID [{gaiaID}], will take only the first one"
-                    ))
+                    "- [WARNING] GAIA has more than one record "
+                    f"for ID [{gaiaID}], will take only the first one"
                 )
             # add found values to the new columns in the original table
             for parameter in adqlParameters:

@@ -1,7 +1,6 @@
-import pytest
-
-import pandas
 import numpy
+import pandas
+import pytest
 
 from utils.datasets import pandas as pnd
 

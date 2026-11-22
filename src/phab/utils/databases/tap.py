@@ -10,18 +10,18 @@ via [TAP](https://ivoa.net/documents/TAP/) interface.
 #     ...
 # ]
 
-import pyvo
 import re
-
 from decimal import Decimal
-from pyvo.utils.http import create_session
-from typing import Optional, Dict, List, Tuple, Any
+from typing import Any
 
-from ..logs.log import logger
+import pyvo
+from pyvo.utils.http import create_session
+
 from ..databases import mirrors
+from ..logs.log import logger
 from ..strings import extraction
 
-services: Dict[str, Dict] = {
+services: dict[str, dict] = {
     "nasa":
     {
         # case-sensitive URL
@@ -72,7 +72,7 @@ a list of `mirrors`, which `utils.databases.tap.queryService` falls back to
 when the main `endpoint` is unavailable.
 """
 
-mappings: Dict[str, Dict] = {
+mappings: dict[str, dict] = {
     "NASA-to-PADC":
     {
         "planets":
@@ -154,7 +154,7 @@ def getServiceEndpoint(tapServiceName: str) -> str:
         )
 
 
-def getServiceMirrors(tapEndpoint: str) -> List[str]:
+def getServiceMirrors(tapEndpoint: str) -> list[str]:
     """
     Get the mirrors of a TAP service by its endpoint, if that is one
     of the `utils.databases.tap.services` (*a trailing `/` doesn't matter*),
@@ -227,17 +227,17 @@ def getFirewallBlockHint(ex: Exception) -> str:
         "text/html" not in response.headers.get("Content-Type", "")
     ):
         return ""
-    return " ".join((
-        "The request was blocked by Cloudflare (the firewall in front",
-        "of this service), most likely because to the firewall the query",
-        "looks like an SQL injection attack, such as a string literal",
-        "followed by AND or OR and then an IS NULL or IS NOT NULL condition,",
-        "or a CAST. Try to rephrase the query, for example by reordering",
-        "the conditions in WHERE or by replacing a CAST with an arithmetic",
-        "expression or a range. If that doesn't help, you can report the block",
-        "to the service by referring to its Cloudflare Ray ID:",
+    return (
+        "The request was blocked by Cloudflare (the firewall in front "
+        "of this service), most likely because to the firewall the query "
+        "looks like an SQL injection attack, such as a string literal "
+        "followed by AND or OR and then an IS NULL or IS NOT NULL condition, "
+        "or a CAST. Try to rephrase the query, for example by reordering "
+        "the conditions in WHERE or by replacing a CAST with an arithmetic "
+        "expression or a range. If that doesn't help, you can report the block "
+        "to the service by referring to its Cloudflare Ray ID: "
         f"{response.headers.get('CF-RAY', 'unknown')}."
-    ))
+    )
 
 
 def escapeSpecialCharactersForAdql(rawQuery: str) -> str:
@@ -272,7 +272,7 @@ def queryService(
     tapEndpoint: str,
     adqlQuery: str,
     tryToReExecuteOnFailure: bool = True
-) -> Optional[pyvo.dal.tap.TAPResults]:
+) -> pyvo.dal.tap.TAPResults | None:
     """
     Send [ADQL](https://ivoa.net/documents/ADQL/) request to the TAP service
     and return results. Those can be then converted to
@@ -307,7 +307,7 @@ def queryService(
     has in front of it*), then an explanation from `utils.databases.tap.getFirewallBlockHint`
     is logged, and the exception is raised as usual.
     """
-    tapServers: List[str] = [tapEndpoint] + getServiceMirrors(tapEndpoint)
+    tapServers: list[str] = [tapEndpoint] + getServiceMirrors(tapEndpoint)
     logger.debug(f"ADQL query to execute: {adqlQuery}")
     results = None
     try:
@@ -315,11 +315,9 @@ def queryService(
     except pyvo.dal.exceptions.DALQueryError as ex:
         if tryToReExecuteOnFailure:
             logger.warning(
-                " ".join((
-                    "The query failed, will try to execute again,",
-                    "but this time with escaped characters. Original",
-                    f"error message: {ex}"
-                ))
+                "The query failed, will try to execute again, "
+                "but this time with escaped characters. Original "
+                f"error message: {ex}"
             )
             adqlQueryEscaped = escapeSpecialCharactersForAdql(adqlQuery)
             logger.debug(f"Escaped ADQL query to execute: {adqlQueryEscaped}")
@@ -334,7 +332,7 @@ def queryService(
 
 
 def _search(
-    tapServers: List[str],
+    tapServers: list[str],
     adqlQuery: str
 ) -> pyvo.dal.tap.TAPResults:
     try:
@@ -355,7 +353,7 @@ def _search(
         raise
 
 
-def getParametersThatAreDoubleInNASA() -> List[str]:
+def getParametersThatAreDoubleInNASA() -> list[str]:
     """
     Get the list of parameters names in the NASA `ps` table that have the `double`
     type. That is needed so you knew when to select `PARAMETER_NAME_HERE + 0`
@@ -378,15 +376,15 @@ def getParametersThatAreDoubleInNASA() -> List[str]:
     print(doubles)
     ```
     """
-    doubles: List[str] = list()
+    doubles: list[str] = []
 
     results = queryService(
         getServiceEndpoint("nasa"),
-        " ".join((
-            "SELECT column_name",
-            "FROM tap_schema.columns",
+        (
+            "SELECT column_name "
+            "FROM tap_schema.columns "
             "WHERE table_name = 'ps' AND datatype = 'double'"
-        ))
+        )
     )
     if results:
         doubles = list(results.getcolumn("column_name").flatten())
@@ -398,7 +396,7 @@ def getStellarParameterFromNASA(
     systemName: str,
     param: str,
     parameterTypeIsDouble: bool = False
-) -> Optional[Any]:
+) -> Any | None:
     """
     Get the latest (*the newest*) published stellar parameter
     from NASA database.
@@ -422,25 +420,26 @@ def getStellarParameterFromNASA(
     print(val)
     ```
     """
+    selectClause: str = (
+        f"SELECT {param}"
+        if not parameterTypeIsDouble else
+        # an expression has no `format` in `tap_schema.columns`, so NASA returns
+        # its full value instead of rounding it. It used to be `CAST({param} AS REAL)`,
+        # but Cloudflare's firewall in front of NASA blocks queries with `CAST`
+        f"SELECT {param} + 0 AS {param}_real"
+    )
     results = queryService(
         getServiceEndpoint("nasa"),
-        " ".join((
+        (
             # TOP is broken in NASA: https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/#top-clause-is-broken
-            (
-                f"SELECT {param}"
-                if not parameterTypeIsDouble else
-                # an expression has no `format` in `tap_schema.columns`, so NASA returns
-                # its full value instead of rounding it. It used to be `CAST({param} AS REAL)`,
-                # but Cloudflare's firewall in front of NASA blocks queries with `CAST`
-                f"SELECT {param} + 0 AS {param}_real"
-            ),
-            "FROM ps",
+            f"{selectClause} "
+            "FROM ps "
             # the condition with the string literal goes last, because Cloudflare's firewall
             # in front of NASA blocks a string literal followed by AND and then IS NOT NULL,
             # more details in the Known problems section of `utils.databases`
-            f"WHERE {param} IS NOT NULL AND hostname = '{systemName}'",
+            f"WHERE {param} IS NOT NULL AND hostname = '{systemName}' "
             "ORDER BY pl_pubdate DESC"
-        ))
+        )
     )
     if results:
         # logger.debug(f"All results for this parameter:\n{results}")
@@ -457,7 +456,7 @@ def getPlanetaryParameterFromNASA(
     planetName: str,
     param: str,
     parameterTypeIsDouble: bool = False
-) -> Optional[Any]:
+) -> Any | None:
     """
     Get the latest (*the newest*) published planetary parameter
     from NASA database.
@@ -481,25 +480,26 @@ def getPlanetaryParameterFromNASA(
     print(val)
     ```
     """
+    selectClause: str = (
+        f"SELECT {param}"
+        if not parameterTypeIsDouble else
+        # an expression has no `format` in `tap_schema.columns`, so NASA returns
+        # its full value instead of rounding it. It used to be `CAST({param} AS REAL)`,
+        # but Cloudflare's firewall in front of NASA blocks queries with `CAST`
+        f"SELECT {param} + 0 AS {param}_real"
+    )
     results = queryService(
         getServiceEndpoint("nasa"),
-        " ".join((
+        (
             # TOP is broken in NASA: https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/#top-clause-is-broken
-            (
-                f"SELECT {param}"
-                if not parameterTypeIsDouble else
-                # an expression has no `format` in `tap_schema.columns`, so NASA returns
-                # its full value instead of rounding it. It used to be `CAST({param} AS REAL)`,
-                # but Cloudflare's firewall in front of NASA blocks queries with `CAST`
-                f"SELECT {param} + 0 AS {param}_real"
-            ),
-            "FROM ps",
+            f"{selectClause} "
+            "FROM ps "
             # the condition with the string literal goes last, because Cloudflare's firewall
             # in front of NASA blocks a string literal followed by AND and then IS NOT NULL,
             # more details in the Known problems section of `utils.databases`
-            f"WHERE {param} IS NOT NULL AND pl_name = '{planetName}'",
+            f"WHERE {param} IS NOT NULL AND pl_name = '{planetName}' "
             "ORDER BY pl_pubdate DESC"
-        ))
+        )
     )
     if results:
         # logger.debug(f"All results for this parameter:\n{results}")
@@ -515,11 +515,11 @@ def getPlanetaryParameterFromNASA(
 def getPlanetaryParameterReferenceFromNASA(
     planetName: str,
     paramName: str,
-    paramValue: int | float | str,
+    paramValue: float | str,
     parameterTypeIsDouble: bool = False,
     tryToReExecuteIfNoResults: bool = True,
     returnOriginalReferenceOnFailureToExtract: bool = True
-) -> Optional[Any]:
+) -> Any | None:
     """
     Get the publication reference for the given planetary parameter value
     from NASA database.
@@ -549,33 +549,31 @@ def getPlanetaryParameterReferenceFromNASA(
     print(val)
     ```
     """
-    fullRefValue: Optional[str] = None
+    fullRefValue: str | None = None
 
     if tryToReExecuteIfNoResults and not parameterTypeIsDouble:
         logger.warning(
-            " ".join((
-                "The re-execution flag is passed, but parameter type",
-                "is not double, so the query will not be re-executed"
-            ))
+            "The re-execution flag is passed, but parameter type "
+            "is not double, so the query will not be re-executed"
         )
 
     parameterIsString: bool = False
     if isinstance(paramValue, str):
         # logger.debug(f"The {paramName} value {paramValue} is a string")
         parameterIsString = True
+    valueCondition: str = (
+        f"= {paramValue}"
+        if not parameterIsString else
+        f"= '{paramValue}'"
+    )
     results = queryService(
         getServiceEndpoint("nasa"),
-        " ".join((
-            "SELECT pl_refname",  # TOP is broken in NASA: https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/#top-clause-is-broken
-            "FROM ps",
-            f"WHERE pl_name = '{planetName}' AND {paramName}",
-            (
-                f"= {paramValue}"
-                if not parameterIsString else
-                f"= '{paramValue}'"
-            ),
+        (
+            "SELECT pl_refname "  # TOP is broken in NASA: https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/#top-clause-is-broken
+            "FROM ps "
+            f"WHERE pl_name = '{planetName}' AND {paramName} {valueCondition} "
             "ORDER BY pl_pubdate DESC"
-        ))
+        )
     )
     if results:
         # logger.debug(f"All results:\n{results}")
@@ -589,23 +587,20 @@ def getPlanetaryParameterReferenceFromNASA(
         tryToReExecuteIfNoResults
     ):
         logger.warning(
-            " ".join((
-                "The query returned no results, will try to execute again,",
-                "but this time with a range of values around the parameter"
-            ))
+            "The query returned no results, will try to execute again, "
+            "but this time with a range of values around the parameter"
         )
         results = queryService(
             getServiceEndpoint("nasa"),
-            " ".join((
-                "SELECT pl_refname",  # TOP is broken in NASA: https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/#top-clause-is-broken
-                "FROM ps",
+            (
+                "SELECT pl_refname "  # TOP is broken in NASA: https://decovar.dev/blog/2022/02/26/astronomy-databases-tap-adql/#top-clause-is-broken
+                "FROM ps "
                 # the condition with the string literal goes last, because
                 # of Cloudflare's firewall in front of NASA
-                "WHERE",
-                _doubleRangeConditionForADQL(paramName, paramValue),
-                f"AND pl_name = '{planetName}'",
+                f"WHERE {_doubleRangeConditionForADQL(paramName, paramValue)} "
+                f"AND pl_name = '{planetName}' "
                 "ORDER BY pl_pubdate DESC"
-            ))
+            )
         )
         if results:
             # logger.debug(f"All results:\n{results}")
@@ -624,7 +619,7 @@ def getPlanetaryParameterReferenceFromNASA(
 
 def _doubleRangeConditionForADQL(
     column: str,
-    value: int | float | str
+    value: float | str
 ) -> str:
     # the values whose decimal representation starts with the given value without its last digit,
     # which is what the old workaround matched with `CAST(column AS VARCHAR(n)) LIKE 'value without last digit%'`:
@@ -636,15 +631,15 @@ def _doubleRangeConditionForADQL(
     prefix: Decimal = Decimal(prefixString)
     step: Decimal = Decimal(1).scaleb(-len(prefixString.split(".", 1)[1]))
     if prefixString.startswith("-"):
-        return " ".join((
-            f"{column} > {prefix - step:f}",
+        return (
+            f"{column} > {prefix - step:f} "
             f"AND {column} <= {prefix:f}"
-        ))
+        )
     else:
-        return " ".join((
-            f"{column} >= {prefix:f}",
+        return (
+            f"{column} >= {prefix:f} "
             f"AND {column} < {prefix + step:f}"
-        ))
+        )
 
 
 def getParameterFromNASA(
@@ -652,7 +647,7 @@ def getParameterFromNASA(
     planetName: str,
     param: str,
     parameterTypeIsDouble: bool = False
-) -> Optional[Any]:
+) -> Any | None:
     """
     Get the latest (*the newest*) published parameter from NASA database.
     The parameter kind (*stellar or planetary*) is determined
@@ -703,7 +698,7 @@ def getParameterErrorsFromNASA(
     systemName: str,
     planetName: str,
     param: str
-) -> Tuple[Optional[float], Optional[float]]:
+) -> tuple[float | None, float | None]:
     """
     Get the latest (*the newest*) published stellar or planetary
     parameter errors from NASA database. This is a convenience function
@@ -735,7 +730,7 @@ def getParameterErrorsFromNASA(
 def getParameterFromPADC(
     planetName: str,
     param: str
-) -> Optional[Any]:
+) -> Any | None:
     """
     Get stellar or planetary parameter from PADC database.
 
@@ -750,11 +745,11 @@ def getParameterFromPADC(
     """
     results = queryService(
         getServiceEndpoint("padc"),
-        " ".join((
-            f"SELECT {param}",
-            "FROM exoplanet.epn_core",
+        (
+            f"SELECT {param} "
+            "FROM exoplanet.epn_core "
             f"WHERE granule_uid = '{planetName}' AND {param} IS NOT NULL"
-        ))
+        )
     )
     if results:
         return results[0].get(param)
@@ -765,7 +760,7 @@ def getParameterFromPADC(
 def getParameterErrorsFromPADC(
     planetName: str,
     param: str
-) -> Tuple[Optional[float], Optional[float]]:
+) -> tuple[float | None, float | None]:
     """
     Get stellar or planetary parameter errors from PADC database.
     This is a convenience function that uses
@@ -790,7 +785,7 @@ def getStellarParameterFromSimbadByMainID(
     mainID: str,
     table: str,
     param: str,
-) -> Optional[tuple[Any, str]]:
+) -> tuple[Any, str] | None:
     """
     Get the latest (*the newest*) published stellar parameter from SIMBAD
     by using the main ID - star name that is chosen to be stored in `main_id`
@@ -811,13 +806,13 @@ def getStellarParameterFromSimbadByMainID(
     """
     results = queryService(
         getServiceEndpoint("simbad"),
-        " ".join((
-            f"SELECT TOP 1 v.{param}, v.bibcode",
-            f"FROM {table} AS v",
-            "JOIN basic AS b ON v.oidref = b.oid",
-            f"WHERE b.main_id = '{mainID}' AND {param} IS NOT NULL",
+        (
+            f"SELECT TOP 1 v.{param}, v.bibcode "
+            f"FROM {table} AS v "
+            "JOIN basic AS b ON v.oidref = b.oid "
+            f"WHERE b.main_id = '{mainID}' AND {param} IS NOT NULL "
             "ORDER BY bibcode DESC"
-        ))
+        )
     )
     if results:
         return (
@@ -832,7 +827,7 @@ def getStellarParameterFromSimbadByObjectID(
     objectID: int,
     table: str,
     param: str
-) -> Optional[tuple[Any, str]]:
+) -> tuple[Any, str] | None:
     """
     Get the latest (*the newest*) published stellar parameter from SIMBAD
     by using the SIMBAD's object ID.
@@ -862,12 +857,12 @@ def getStellarParameterFromSimbadByObjectID(
     """
     results = queryService(
         getServiceEndpoint("simbad"),
-        " ".join((
-            f"SELECT TOP 1 {param}, bibcode",
-            f"FROM {table}",
-            f"WHERE oidref = {objectID} AND {param} IS NOT NULL",
+        (
+            f"SELECT TOP 1 {param}, bibcode "
+            f"FROM {table} "
+            f"WHERE oidref = {objectID} AND {param} IS NOT NULL "
             "ORDER BY bibcode DESC"
-        ))
+        )
     )
     if results:
         return (

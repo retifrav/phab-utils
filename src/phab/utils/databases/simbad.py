@@ -6,15 +6,16 @@ When the main SIMBAD server is unavailable, the queries fall back
 to its mirrors, more details in `utils.databases.mirrors`.
 """
 
+import re
+from collections.abc import Sequence
+from typing import Any
+
+from astroquery import __version__ as astroqueryVersion  # noqa: F401
 from astroquery.simbad import SimbadClass
 from astroquery.simbad import conf as simbadConf
-from astroquery import __version__ as astroqueryVersion  # noqa: F401
-import re
 
-from typing import Optional, Any, List
-
-from ..logs.log import logger
 from ..databases import mirrors, tap
+from ..logs.log import logger
 
 # own instance instead of astroquery's shared `Simbad` one, so setting
 # the server for every attempt of `tryMirrors()` and the connect timeout
@@ -28,12 +29,12 @@ _simbad = SimbadClass()
 mirrors.addConnectTimeout(_simbad._session)
 
 
-def _getSimbadServers() -> List[str]:
+def _getSimbadServers() -> list[str]:
     # the configured server (CDS by default) first, then the mirrors
     # that astroquery knows about, only these names pass the validation
     # in the `server` setter. Before 0.4.8 astroquery did not use TAP
     # and had no `server` property, so setting it does nothing there
-    serversList: List[str] = getattr(
+    serversList: list[str] = getattr(
         simbadConf,
         "servers_list",
         [simbadConf.server]
@@ -51,9 +52,9 @@ def _queryObjectIDs(server: str, objectName: str) -> Any:
 def findIdentificatorFromAnotherCatalogue(
     starName: str,
     otherIDname: str,
-    otherIDversion: Optional[str] = None,
+    otherIDversion: str | None = None,
     withoutIDprefix: bool = True
-) -> Optional[str]:
+) -> str | None:
     """
     Finds object identificator from a particular catalogue. SIMBAD returns
     a list of identificators prepended with the catalogue name, and this
@@ -87,10 +88,8 @@ def findIdentificatorFromAnotherCatalogue(
     )
     if otherIDs is None:
         logger.warning(
-            " ".join((
-                "SIMBAD database doesn't have information",
-                f"about [{starName}]"
-            ))
+            "SIMBAD database doesn't have information "
+            f"about [{starName}]"
         )
     else:
         logger.debug(f"Checking SIMBAD IDs for [{starName}]:")
@@ -104,33 +103,26 @@ def findIdentificatorFromAnotherCatalogue(
         # or compare `astroquery.__version__` with `0.4.7`
         if idColumnKey not in otherIDs.colnames:
             logger.debug(
-                " ".join((
-                    "There is no upper-cased [ID] key",
-                    "in the resulting table, will try",
-                    "with lower-cased [id] key"
-                ))
+                "There is no upper-cased [ID] key "
+                "in the resulting table, will try "
+                "with lower-cased [id] key"
             )
             idColumnKey = idColumnKey.lower()  # "id"
             if idColumnKey not in otherIDs.colnames:
-                errorMsg = " ".join((
-                    "SIMBAD results table has neither [ID]",
+                errorMsg = (
+                    "SIMBAD results table has neither [ID] "
                     "nor [id] column"
-                ))
+                )
                 logger.error(errorMsg)
                 if len(otherIDs.colnames) > 0:
                     logger.debug(
-                        " ".join((
-                            "Here are all the columns/keys",
-                            "in this table:",
-                            ", ".join(otherIDs.colnames)
-                        ))
+                        "Here are all the columns/keys "
+                        f"in this table: {', '.join(otherIDs.colnames)}"
                     )
                 else:
                     logger.debug(
-                        " ".join((
-                            "There are no columns/keys",
-                            "in this table at all"
-                        ))
+                        "There are no columns/keys "
+                        "in this table at all"
                     )
                 raise KeyError(errorMsg)
 
@@ -158,8 +150,8 @@ def findIdentificatorFromAnotherCatalogue(
 def getObjectID(
     starName: str,
     fallbackToLikeInsteadOfEqual: bool = False,
-    problematicIdentifiersPrefixes: List[str] = ["SZ"]
-) -> Optional[int]:
+    problematicIdentifiersPrefixes: Sequence[str] = ("SZ",)
+) -> int | None:
     """
     Finds object identificator for
     [SIMBAD tables](http://simbad.cds.unistra.fr/simbad/tap/tapsearch.html).
@@ -218,33 +210,29 @@ def getObjectID(
         print("No results")
     ```
     """
-    oid: Optional[int] = None
+    oid: int | None = None
 
     # check if this name is already the main ID
     logger.debug(f"Checking whether [{starName}] is already the main ID")
     rez = tap.queryService(
         tap.getServiceEndpoint("simbad"),
-        " ".join((
-            "SELECT oid",
-            "FROM basic",
+        (
+            "SELECT oid "
+            "FROM basic "
             f"WHERE main_id = '{starName}'"
-        ))
+        )
     )
     if rez:
         oid = rez[0]["oid"]
         logger.debug(
-            " ".join((
-                "- yes, that is already the main ID,",
-                "no need to iterate all the identificators.",
-                f"SIMBAD object ID is: {oid}"
-            ))
+            "- yes, that is already the main ID, "
+            "no need to iterate all the identificators. "
+            f"SIMBAD object ID is: {oid}"
         )
     else:
         logger.debug(
-            " ".join((
-                "- no, that is not the main ID, will have to iterate",
-                "all the other identificators"
-            ))
+            "- no, that is not the main ID, will have to iterate "
+            "all the other identificators"
         )
         ids = mirrors.tryMirrors(
             _getSimbadServers(),
@@ -252,10 +240,8 @@ def getObjectID(
         )
         if ids is None:
             logger.warning(
-                " ".join((
-                    "SIMBAD database doesn't have information",
-                    f"about [{starName}]"
-                ))
+                "SIMBAD database doesn't have information "
+                f"about [{starName}]"
             )
         else:
             logger.debug(f"Checking SIMBAD IDs for [{starName}]:")
@@ -269,33 +255,26 @@ def getObjectID(
             # or compare `astroquery.__version__` with `0.4.7`
             if idColumnKey not in ids.colnames:
                 logger.debug(
-                    " ".join((
-                        "There is no upper-cased [ID] key",
-                        "in the resulting table, will try",
-                        "with lower-cased [id] key"
-                    ))
+                    "There is no upper-cased [ID] key "
+                    "in the resulting table, will try "
+                    "with lower-cased [id] key"
                 )
                 idColumnKey = idColumnKey.lower()  # "id"
                 if idColumnKey not in ids.colnames:
-                    errorMsg = " ".join((
-                        "SIMBAD results table has neither [ID]",
+                    errorMsg = (
+                        "SIMBAD results table has neither [ID] "
                         "nor [id] column"
-                    ))
+                    )
                     logger.error(errorMsg)
                     if len(ids.colnames) > 0:
                         logger.debug(
-                            " ".join((
-                                "Here are all the columns/keys",
-                                "in this table:",
-                                ", ".join(ids.colnames)
-                            ))
+                            "Here are all the columns/keys "
+                            f"in this table: {', '.join(ids.colnames)}"
                         )
                     else:
                         logger.debug(
-                            " ".join((
-                                "There are no columns/keys",
-                                "in this table at all"
-                            ))
+                            "There are no columns/keys "
+                            "in this table at all"
                         )
                     raise KeyError(errorMsg)
 
@@ -310,19 +289,17 @@ def getObjectID(
                     continue
                 rez = tap.queryService(
                     tap.getServiceEndpoint("simbad"),
-                    " ".join((
-                        "SELECT oid",
-                        "FROM basic",
+                    (
+                        "SELECT oid "
+                        "FROM basic "
                         f"WHERE main_id = '{idValue}'"
-                    ))
+                    )
                 )
                 if rez:
                     oid = rez[0]["oid"]
                     logger.debug(
-                        " ".join((
-                            f"The [{idValue}] is the main ID for",
-                            f"[{starName}], SIMBAD object ID is: {oid}"
-                        ))
+                        f"The [{idValue}] is the main ID for "
+                        f"[{starName}], SIMBAD object ID is: {oid}"
                     )
                     break
                 else:  # fallback for known problematic identifiers
@@ -349,44 +326,38 @@ def getObjectID(
                         # )
                     ):
                         logger.debug(
-                            " ".join((
-                                "Did not find SIMBAD object ID for",
-                                f"[{idValue}], but it is a known problematic",
-                                "identifier, so will try a fallback with LIKE"
-                            ))
+                            "Did not find SIMBAD object ID for "
+                            f"[{idValue}], but it is a known problematic "
+                            "identifier, so will try a fallback with LIKE"
                         )
                         rez = tap.queryService(
                             tap.getServiceEndpoint("simbad"),
                             # not sure if `ORDER BY update_date` is correct
                             # here, but there is already nothing correct about
                             # using `LIKE` instead of strict `=`, so
-                            " ".join((
-                                "SELECT TOP 1 oid",
-                                "FROM basic",
-                                f"WHERE main_id LIKE '{idValueUppercased}'",
+                            (
+                                "SELECT TOP 1 oid "
+                                "FROM basic "
+                                f"WHERE main_id LIKE '{idValueUppercased}' "
                                 "ORDER BY update_date DESC"
-                            ))
+                            )
                         )
                         if rez:
                             oid = rez[0]["oid"]
                             logger.debug(
-                                " ".join((
-                                    f"The [{idValueUppercased}] is the main",
-                                    f"ID for [{starName}], SIMBAD object ID",
-                                    f"is: {oid}"
-                                ))
+                                f"The [{idValueUppercased}] is the main "
+                                f"ID for [{starName}], SIMBAD object ID "
+                                f"is: {oid}"
                             )
                             logger.warning(
-                                " ".join((
-                                    "Managed to find the SIMBAD object ID,",
-                                    "but be aware that it was found with",
-                                    "a fallback for problematic identifiers,",
-                                    "which means using LIKE in the WHERE",
-                                    "clause, so the result is not guaranteed",
-                                    "to be correct; and if you would like",
-                                    "to disable this fallback, then set",
-                                    "fallbackToLikeInsteadOfEqual to False"
-                                ))
+                                "Managed to find the SIMBAD object ID, "
+                                "but be aware that it was found with "
+                                "a fallback for problematic identifiers, "
+                                "which means using LIKE in the WHERE "
+                                "clause, so the result is not guaranteed "
+                                "to be correct; and if you would like "
+                                "to disable this fallback, then set "
+                                "fallbackToLikeInsteadOfEqual to False"
                             )
                             break
     return oid
@@ -396,7 +367,7 @@ def getStellarParameter(
     starName: str,
     table: str,
     param: str
-) -> Optional[tuple[Any, str]]:
+) -> tuple[Any, str] | None:
     """
     A convenience function for querying SIMBAD for a stellar parameter:
 
@@ -425,7 +396,7 @@ def getStellarParameter(
         print(f"SIMBAD doesn't have data about [{param}] parameter of [{starName}] object")
     ```
     """
-    rez: Optional[tuple[Any, str]] = None
+    rez: tuple[Any, str] | None = None
 
     oid = getObjectID(starName)
     if oid:

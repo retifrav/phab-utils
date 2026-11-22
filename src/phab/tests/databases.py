@@ -1,35 +1,31 @@
-import pytest
-
-from utils.databases import tap, lightcurves, simbad, mirrors
-from . import somethingThatDoesntExist  # noqa: F401
-
-from pyvo.dal.exceptions import (
-    DALQueryError,
-    DALServiceError,
-    DALFormatError
-)
+from collections.abc import Callable
 from contextlib import nullcontext
-from packaging.version import Version
-import pandas
-import lightkurve
-import requests
+from typing import Literal
 
-from typing import Tuple, Literal, Callable, Dict, List, Optional
+import lightkurve
+import pandas
+import pytest
+import requests
+from packaging.version import Version
+from pyvo.dal.exceptions import DALFormatError, DALQueryError, DALServiceError
+
+from utils.databases import lightcurves, mirrors, simbad, tap
+
+from . import somethingThatDoesntExist  # noqa: F401
 
 
 @pytest.fixture
-def tapService() -> Tuple[str, str]:
+def tapService() -> tuple[str, str]:
     return ("padc", "http://voparis-tap-planeto.obspm.fr/tap")
 
 
-def test_known_tap_service(tapService: Tuple[str, str]) -> None:
+def test_known_tap_service(tapService: tuple[str, str]) -> None:
     tapServiceEndpoint = tap.getServiceEndpoint(tapService[0])
     assert tapServiceEndpoint
-    assert tapServiceEndpoint == tapService[1], \
-        " ".join((
-            f"The \"{tapService[0]}\" TAP service",
-            "has a different endpoint registered"
-        ))
+    assert tapServiceEndpoint == tapService[1], (
+        f"The \"{tapService[0]}\" TAP service "
+        "has a different endpoint registered"
+    )
 
 
 def test_unknown_tap_service(
@@ -43,11 +39,11 @@ def test_unknown_tap_service(
 
 
 def test_escape_special_characters_for_adql() -> None:
-    rawQuery = " ".join((
-        "SELECT oid FROM basic",
-        "WHERE main_id = 'NAME Teegarden's Star'",
+    rawQuery = (
+        "SELECT oid FROM basic "
+        "WHERE main_id = 'NAME Teegarden's Star' "
         "AND main_id != 'someone else's star'"
-    ))
+    )
     # escaped ADQL query
     tap.queryService(
         tap.getServiceEndpoint("simbad"),
@@ -79,8 +75,8 @@ def noMainServerFailures(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def fakeServersAttempt(
-    failures: Dict[str, Exception],
-    calls: List[Tuple[str, Optional[float]]]
+    failures: dict[str, Exception],
+    calls: list[tuple[str, float | None]]
 ) -> Callable[[str], str]:
     # records every attempt with its connect timeout and fails
     # for the servers from `failures` with their exception
@@ -100,7 +96,7 @@ def test_mirrors_fall_back_on_unavailable_servers(
         DALFormatError(ConnectionError("Connection refused")),
         OSError("Connection timed out")
     ):
-        calls: List[Tuple[str, Optional[float]]] = []
+        calls: list[tuple[str, float | None]] = []
         result = mirrors.tryMirrors(
             ["main", "mirror1", "mirror2"],
             fakeServersAttempt(
@@ -122,7 +118,7 @@ def test_mirrors_fall_back_on_unavailable_servers(
 def test_mirrors_do_not_retry_query_errors(
     noMainServerFailures: None
 ) -> None:
-    calls: List[Tuple[str, Optional[float]]] = []
+    calls: list[tuple[str, float | None]] = []
     with pytest.raises(DALQueryError, match=r"^Incorrect ADQL query$"):
         mirrors.tryMirrors(
             ["main", "mirror"],
@@ -154,7 +150,7 @@ def test_mirrors_last_error_propagates(
 def test_mirrors_single_server_is_a_plain_call(
     noMainServerFailures: None
 ) -> None:
-    calls: List[Tuple[str, Optional[float]]] = []
+    calls: list[tuple[str, float | None]] = []
     with pytest.raises(OSError):
         mirrors.tryMirrors(
             ["main"],
@@ -171,10 +167,10 @@ def test_mirrors_main_server_cooldown(
     noMainServerFailures: None,
     monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    failures: Dict[str, Exception] = {"main": OSError("Connection timed out")}
-    calls: List[Tuple[str, Optional[float]]] = []
+    failures: dict[str, Exception] = {"main": OSError("Connection timed out")}
+    calls: list[tuple[str, float | None]] = []
     attempt = fakeServersAttempt(failures, calls)
-    servers: List[str] = ["main", "mirror"]
+    servers: list[str] = ["main", "mirror"]
 
     # the main server fails, so it is skipped on the next call
     assert mirrors.tryMirrors(servers, attempt) == "results from mirror"
@@ -228,7 +224,7 @@ def test_firewall_block_hint(
     server: str,
     status: int,
     contentType: str,
-    rayID: Optional[str],
+    rayID: str | None,
     expectedHint: bool
 ) -> None:
     response = requests.Response()
@@ -456,16 +452,15 @@ def test_get_object_id(
     #
     # from version 0.4.8 astroquery no longer outputs BlankResponseWarning
     with (
-        nullcontext()  # type:ignore[attr-defined] # ya hz
+        nullcontext()
         if Version(simbad.astroqueryVersion) > Version("0.4.7")
         else pytest.warns(Warning)  # should be BlankResponseWarning
     ):
         objectID = simbad.getObjectID(f"A2 146 {somethingThatDoesntExist}")
-        assert objectID is None, \
-            " ".join((
-                "There shouldn't be a known object that would contain",
-                f"\"{somethingThatDoesntExist}\" as a part of its name"
-            ))
+        assert objectID is None, (
+            "There shouldn't be a known object that would contain "
+            f"\"{somethingThatDoesntExist}\" as a part of its name"
+        )
 
         # an object that does exist but has a problematic identifier
         # (no longer a problem, apparently)
@@ -508,11 +503,10 @@ def test_get_stellar_parameter_from_simbad_by_main_id(
         "mesVar",
         "period",
     )
-    assert rez is None, \
-        " ".join((
-            "There shouldn't be a known object",
-            f"under the name \"{somethingThatDoesntExist}\""
-        ))
+    assert rez is None, (
+        "There shouldn't be a known object "
+        f"under the name \"{somethingThatDoesntExist}\""
+    )
 
 
 def test_get_stellar_parameter_from_simbad_by_object_id() -> None:
@@ -532,11 +526,10 @@ def test_get_stellar_parameter_from_simbad_by_object_id() -> None:
         "mesVar",
         "period"
     )
-    assert rez is None, \
-        " ".join((
-            "There shouldn't be a known object",
-            f"with the object ID \"{oidThatDoesNotExist}\""
-        ))
+    assert rez is None, (
+        "There shouldn't be a known object "
+        f"with the object ID \"{oidThatDoesNotExist}\""
+    )
 
 
 def test_get_stellar_parameter(
@@ -553,7 +546,7 @@ def test_get_stellar_parameter(
     assert isinstance(rez[1], str)
     # parameter of an object that does not exist
     with (
-        nullcontext()  # type:ignore[attr-defined] # ya hz
+        nullcontext()
         if Version(simbad.astroqueryVersion) > Version("0.4.7")
         else pytest.warns(Warning)  # should be BlankResponseWarning
     ):
@@ -562,8 +555,7 @@ def test_get_stellar_parameter(
             "mesVar",
             "period"
         )
-        assert rez is None, \
-            " ".join((
-                "There shouldn't be a known object",
-                f"under the name \"{somethingThatDoesntExist}\""
-            ))
+        assert rez is None, (
+            "There shouldn't be a known object "
+            f"under the name \"{somethingThatDoesntExist}\""
+        )
