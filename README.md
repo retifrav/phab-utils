@@ -14,8 +14,10 @@ Original project name was `uio-exoplanet-group`, which later got renamed to `pha
 - [Documentation](#documentation)
     - [API](#api)
     - [wiki](#wiki)
-- [Tests](#tests)
-- [Linting and type checking](#linting-and-type-checking)
+- [QA](#qa)
+    - [Tests](#tests)
+    - [Linting and type checking](#linting-and-type-checking)
+- [Donation](#donation)
 
 <!-- /MarkdownTOC -->
 
@@ -97,7 +99,9 @@ Located in `wiki`. This is general purpose / technical manuals, articles, notes,
 
 It is meant to be published somewhere else, but for now it will do being a part of repository. GitHub wikis could've been an option, but those are still quite bad in terms of organizing the content.
 
-## Tests
+## QA
+
+### Tests
 
 To run tests:
 
@@ -109,7 +113,7 @@ $ python -m pytest ./src/phab/tests/databases.py
 $ python -m pytest ./src/phab/tests/databases.py -k "test_get_parameters_that_are_double_in_nasa"
 ```
 
-## Linting and type checking
+### Linting and type checking
 
 The code is checked with [ruff](https://docs.astral.sh/ruff/) (*linting*) and [ty](https://docs.astral.sh/ty/) (*type checking*). Both are configured in `pyproject.toml`, so they need no extra options, but they should be run from the repository root.
 
@@ -133,3 +137,10 @@ Some notes:
 - `pytest` is installed for its types, other dependencies are installed from `setup.cfg`;
 - `--error-on-warning` makes ty fail on warnings too (*such as deprecations*);
 - don't use `ruff format`, as the code isn't formatted with it.
+
+## Donation
+
+You can support this project via [GitHub Sponsors](https://github.com/sponsors/retifrav) or by donating cryptocurrency to either of the following wallets (*[signed variant](https://decovar.dev/donation.txt)*):
+
+- XLM: `GDYB2QGJYWT6VPT7O7INWIGRGJF5ZEAQ7Y73S4T47IOP2QQ554NPN3ZM`
+- BTC: `bc1q2kfqwm2kwyw37ay2g4tnguasvp6j4hsmtrgjte`
