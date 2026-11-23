@@ -2,7 +2,7 @@
 
 <!-- MarkdownTOC -->
 
-- [?](#)
+- [2026.11.23](#20261123)
 - [2026.1.9](#202619)
 - [0.9.0](#090)
 - [0.8.2](#082)
@@ -21,7 +21,7 @@
 
 <!-- /MarkdownTOC -->
 
-## ?
+## 2026.11.23
 
 - the package now requires Python `3.12` or later
 - type annotations in functions signatures use the newer syntax: `X | None` instead of `Optional[X]`, `list[str]` instead of `List[str]`, and so on. The types themselves are the same, except for `int | float` which became just `float` (*that accepts `int` values too*) in `tap.getPlanetaryParameterReferenceFromNASA()` and `datasets.pandas.dropMeaninglessRows()`;
@@ -36,7 +36,9 @@
         * identifier lookups fall back to the mirrors, using their own Astroquery SIMBAD instance;
         * `getObjectID()` - the `problematicIdentifiersPrefixes` parameter is now a `Sequence[str]` with a tuple `("SZ",)` as the default value instead of a `["SZ"]` list, as a mutable default value is shared between all the calls of the function. Passing a list still works;
     + `lightcurves`
-        * `fitsToPandas()` - no more byte order swap. Astropy already converts big-endian FITS data to the native byte order of the system, so the swap was turning it back into big-endian. With Pandas older than `3.1.0` that made no difference, as Pandas converted the columns to native again, but with Pandas `3.1.0` and newer the resulting table columns stayed big-endian (*with correct values*). Now they are native with any Pandas version. If your project swaps the byte order of these columns itself to work around that, remove the swap, as it would now turn them big-endian;
+        * `fitsToPandas()`
+            - no more byte order swap. Astropy already converts big-endian FITS data to the native byte order of the system, so the swap was turning it back into big-endian. With Pandas older than `3.1.0` that made no difference, as Pandas converted the columns to native again, but with Pandas `3.1.0` and newer the resulting table columns stayed big-endian (*with correct values*). Now they are native with any Pandas version. If your project swaps the byte order of these columns itself to work around that, remove the swap, as it would now turn them big-endian;
+            - no more `UnitsWarning` from Astropy on every call about units that are not in the FITS standard, such as `e-/s` and `pixels` in TESS files, as the resulting table doesn't have units anyway;
 - `files`
     + `file`
         * `directoryExists()`, `fileExists()` - an unsupported type of the path is reported as an error, instead of failing with `TypeError`;

@@ -352,7 +352,12 @@ def fitsToPandas(
             f"Provided path to [{fitsFilePath}] seems to be wrong"
         )
     else:
-        lc = Table.read(fitsFile)
+        # light curve files from the archives have unit strings that are not in the FITS standard
+        # (TESS files have `BJD - 2457000, days`, `e-/s` and `pixels`), and Astropy warns about
+        # every such column on every read. The units are not needed here, because `numpy.array()`
+        # below drops them, so they are left unrecognized without warnings, just like Lightkurve
+        # ignores these warnings too (its issue #1216)
+        lc = Table.read(fitsFile, unit_parse_strict="silent")
 
     # exclude values which do not satisfy the required quality
     if fitsType is not None:
