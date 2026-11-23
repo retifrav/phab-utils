@@ -64,9 +64,7 @@ There are two different pieces of documentation.
 
 ### API
 
-Located in `documentation`. This is the package API documentation, which is published [here](https://phab.decovar.dev/).
-
-It is generated with [pdoc](https://pdoc.dev). 
+Located in `documentation`. This is the package API documentation, which is published [here](https://phab.decovar.dev/). It is generated with [pdoc](https://pdoc.dev). 
 
 Unfortunately, `pdoc` lists only `#` and `##` headings in the sidebar's table of contents, so to get `###` headings listed too, the command below runs it in a kind of wrapper:
 
