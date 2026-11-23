@@ -66,7 +66,9 @@ There are two different pieces of documentation.
 
 Located in `documentation`. This is the package API documentation, which is published [here](https://phab.decovar.dev/).
 
-It is generated with [pdoc](https://pdoc.dev):
+It is generated with [pdoc](https://pdoc.dev). 
+
+Unfortunately, `pdoc` lists only `#` and `##` headings in the sidebar's table of contents, so to get `###` headings listed too, the command below runs it in a kind of wrapper:
 
 ``` sh
 $ pip install pdoc
@@ -74,7 +76,9 @@ $ pip install pdoc
 $ cd /path/to/phab-utils
 $ rm -r ./documentation/_deploy/*
 
-$ PHAB_PACKAGE_VERSION=$(git rev-parse --short HEAD) pdoc ./src/phab/utils ./src/phab/tasks \
+$ PHAB_PACKAGE_VERSION=$(git rev-parse --short HEAD) python -c \
+    'import sys, pdoc.__main__, pdoc.render_helpers; pdoc.render_helpers.markdown_extensions["toc"]["depth"] = 3; pdoc.__main__.cli(sys.argv[1:])' \
+    ./src/phab/utils ./src/phab/tasks \
     --template-directory ./documentation/_templates/ \
     --edit-url="utils=https://github.com/retifrav/phab-utils/blob/master/src/phab/utils/" \
     --edit-url="tasks=https://github.com/retifrav/phab-utils/blob/master/src/phab/tasks/" \
@@ -82,9 +86,7 @@ $ PHAB_PACKAGE_VERSION=$(git rev-parse --short HEAD) pdoc ./src/phab/utils ./src
 $ cp ./documentation/{favicon.ico,phab.jpg} ./documentation/_deploy/
 ```
 
-For now it's a blunt deployment of generated HTML, but later it probably will be better to rely on GitHub Actions (*if it won't spend too much of free quota*) by customizing [this workflow](https://github.com/mitmproxy/pdoc/blob/main/.github/workflows/docs.yml).
-
-If you'd like to browse generated documentation locally, you can just open the main `index.html` from `./documentation/_deploy/` in your browser. Alternatively, you can launch a basic Python server:
+If you'd like to browse the generated documentation locally, you can just open the main `index.html` from `./documentation/_deploy/` in your browser. Alternatively, you can launch a basic Python server:
 
 ``` py
 $ cd ./documentation/_deploy/
